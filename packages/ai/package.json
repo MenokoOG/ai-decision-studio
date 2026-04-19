@@ -1,0 +1,12 @@
+{
+  "name": "@ai-cost-tool/ai",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "lint": "echo 'lint pending'",
+    "format": "echo 'format pending'",
+    "typecheck": "echo 'typecheck pending'",
+    "test": "echo 'tests pending'"
+  }
+}

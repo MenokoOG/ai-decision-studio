@@ -1,0 +1,7 @@
+
+
+> desktop@0.1.0 format /home/m3n0ko0g/development/04_products/ai-cost-tool-starter-ai-decision-studio-harness-clean/apps/desktop
+> prettier --check "src/**/*.{ts,tsx,js,jsx,json,css}"
+
+Checking formatting...
+src/main/index.ts[2K[1Gsrc/preload/index.ts[2K[1Gsrc/renderer/app/globals.css[2K[1Gsrc/renderer/app/layout.tsx[2K[1Gsrc/renderer/app/page.tsx[2K[1Gsrc/renderer/components/ui/button.tsx[2K[1Gsrc/renderer/components/ui/card.tsx[2K[1Gsrc/renderer/lib/utils.ts[2K[1Gsrc/renderer/next-env.d.ts[2K[1Gsrc/renderer/tsconfig.json[2K[1GAll matched files use Prettier code style!

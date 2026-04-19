@@ -1,0 +1,49 @@
+{
+  "name": "desktop",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently -k \"pnpm dev:renderer\" \"pnpm dev:preload\" \"pnpm dev:main\" \"pnpm dev:electron\"",
+    "dev:renderer": "next dev src/renderer -p 3000",
+    "dev:preload": "tsup src/preload/index.ts --format=cjs --platform=node --out-dir dist/preload --watch",
+    "dev:main": "tsup src/main/index.ts --format=cjs --platform=node --external electron --out-dir dist/main --watch",
+    "dev:electron": "wait-on tcp:3000 dist/main/index.js dist/preload/index.js && nodemon --watch dist/main --watch dist/preload --ext js --exec \"cross-env NODE_ENV=development electron dist/main/index.js\"",
+    "build": "pnpm build:renderer && pnpm build:preload && pnpm build:main",
+    "build:renderer": "next build src/renderer",
+    "build:preload": "tsup src/preload/index.ts --format=cjs --platform=node --minify --out-dir dist/preload",
+    "build:main": "tsup src/main/index.ts --format=cjs --platform=node --external electron --minify --out-dir dist/main",
+    "lint": "next lint src/renderer",
+    "format": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'tests pending'"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.469.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^31.7.7",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.0.0",
+    "nodemon": "^3.1.9",
+    "postcss": "^8.4.49",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^3.4.16",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.0",
+    "wait-on": "^9.0.5"
+  }
+}

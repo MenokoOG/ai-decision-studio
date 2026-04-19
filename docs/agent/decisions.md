@@ -1,0 +1,21 @@
+# DECISIONS
+
+- Use Electron for desktop-first local workflows.
+- Use Next.js renderer for fast UI and future web portability.
+- Do not use Nest in v1.
+- Use SQLite + Prisma for local persistence.
+- Keep app usable offline except AI calls.
+- Prioritize clean exports slightly over imports.
+- Use OpenAI-compatible provider abstraction from day one.
+- No auth in v1.
+- Include a built-in template library in v1.
+- Use Turbo monorepo task orchestration with explicit `format` pipeline support.
+- Use `tsup` to compile Electron main/preload TypeScript to CJS artifacts under `apps/desktop/dist`.
+- Keep Electron security invariants in main process (`contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`).
+- Use static Next export for desktop renderer production artifacts and load via Electron `loadFile`.
+- Add shadcn/ui-compatible foundation (`button`, `card`, `cn` utility) with Tailwind CSS variable tokens.
+- Standardize formatting with Prettier and ignore generated renderer build output under `src/renderer/.next`.
+- Extend persistence model with roadmap phases, template library records, AI run audit history, and explicit financial lock confirmations.
+- Keep cost and benefit lock state in deterministic line records (`isLocked`, `lockReason`) so AI changes can be guarded at service boundaries.
+- Seed a compact built-in template library via Prisma seed script to ensure deterministic offline bootstrap.
+- Use SQLite local database with initial migration committed from Prisma schema as source of truth.

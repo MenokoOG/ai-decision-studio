@@ -1,0 +1,24 @@
+{
+  "name": "@ai-cost-tool/db",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "lint": "echo 'lint pending'",
+    "format": "echo 'format pending'",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'tests pending'"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prisma": "^6.7.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}

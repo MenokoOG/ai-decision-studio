@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum InitiativePhase {
+  DISCOVERY
+  DESIGN
+  BUILD
+  PILOT
+  SCALE
+  GOVERNANCE
+}
+
+enum LineType {
+  COST
+  BENEFIT
+}
+
+enum ActorType {
+  USER
+  AI
+  SYSTEM
+}
+
+model Initiative {
+  id           String         @id @default(cuid())
+  title        String
+  summary      String
+  owner        String
+  phase        InitiativePhase @default(DISCOVERY)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  costLines    CostLine[]
+  benefitLines BenefitLine[]
+  decisions    Decision[]
+  roadmapPhases RoadmapPhase[]
+  auditEvents  AuditEvent[]
+  aiRuns       AIRun[]
+
+  @@index([phase])
+}
+
+model CostLine {
+  id           String  @id @default(cuid())
+  initiativeId String
+  category     String
+  oneTime      Float   @default(0)
+  annual       Float   @default(0)
+  notes        String  @default("")
+  sortOrder    Int     @default(0)
+  isLocked     Boolean @default(false)
+  lockReason   String?
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@index([initiativeId, sortOrder])
+}
+
+model BenefitLine {
+  id           String  @id @default(cuid())
+  initiativeId String
+  category     String
+  oneTime      Float   @default(0)
+  annual       Float   @default(0)
+  notes        String  @default("")
+  sortOrder    Int     @default(0)
+  isLocked     Boolean @default(false)
+  lockReason   String?
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@index([initiativeId, sortOrder])
+}
+
+model Decision {
+  id             String  @id @default(cuid())
+  initiativeId String
+  optionType   String
+  optionName   String
+  costScore    Float   @default(0)
+  benefitScore Float   @default(0)
+  riskScore    Float   @default(0)
+  fitScore     Float   @default(0)
+  totalScore   Float   @default(0)
+  recommendation String @default("")
+  rationale      String  @default("")
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@index([initiativeId])
+}
+
+model RoadmapPhase {
+  id           String   @id @default(cuid())
+  initiativeId String
+  phaseNumber  Int
+  title        String
+  lane         String
+  deliverables String   @default("")
+  startDate    DateTime?
+  endDate      DateTime?
+  sortOrder    Int      @default(0)
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@index([initiativeId, sortOrder])
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  industry     String
+  summary      String
+  oneLiner     String
+  defaultPhase InitiativePhase @default(DISCOVERY)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AuditEvent {
+  id           String    @id @default(cuid())
+  initiativeId String?
+  actorType    ActorType
+  eventType    String
+  eventSource  String
+  payload      Json?
+  createdAt    DateTime  @default(now())
+  initiative   Initiative? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+
+  @@index([initiativeId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model AIRun {
+  id                       String   @id @default(cuid())
+  initiativeId             String?
+  provider                 String
+  model                    String
+  promptVersion            String
+  prompt                   String
+  response                 String
+  metadata                 Json?
+  attemptedLockedMutation  Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  initiative               Initiative? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  lockConfirmations        FinancialLockConfirmation[]
+
+  @@index([initiativeId, createdAt])
+}
+
+model FinancialLockConfirmation {
+  id             String   @id @default(cuid())
+  aiRunId        String
+  lineType       LineType
+  lineId         String
+  previousValue  Float
+  proposedValue  Float
+  confirmedBy    String
+  confirmedAt    DateTime @default(now())
+  aiRun          AIRun    @relation(fields: [aiRunId], references: [id], onDelete: Cascade)
+
+  @@index([lineType, lineId, confirmedAt])
+}
