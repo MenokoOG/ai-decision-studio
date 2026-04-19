@@ -20,7 +20,7 @@
 - [x] Implement initiative service
 - [x] Implement business case service
 - [x] Implement decision matrix service
-- [ ] Implement roadmap service
+- [x] Implement roadmap service
 - [ ] Implement export service
 
 ## AI
@@ -51,6 +51,7 @@
 - [x] Business Case tab remains fully functional with deterministic calculation and save/reload flow.
 - [x] Tabs now include guided step navigation so users can progress through the workflow as they complete fields.
 - [x] Decision Matrix tab now supports editable options with deterministic weighted scoring and SQLite-backed save/load.
+- [ ] Roadmap tab full editor wiring pending in current renderer page; roadmap service + IPC are implemented and ready.
 
 ## Export
 

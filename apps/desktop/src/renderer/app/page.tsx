@@ -55,6 +55,7 @@ export default function Page() {
 
   const {
     addDecisionOption,
+    addRoadmapPhase,
     activeInitiativeId,
     assumptions,
     decisionMatrixError,
@@ -65,12 +66,15 @@ export default function Page() {
     initiativesError,
     isInitiativesLoading,
     isPreviewLoading,
+    isRoadmapLoading,
+    isRoadmapSaving,
     isSaving,
     isTemplateLibraryOpen,
     isTemplatesLoading,
     openInitiative,
     persistDecisionMatrix,
     persistBusinessCase,
+    persistRoadmap,
     preview,
     previewError,
     selectedTemplate,
@@ -85,8 +89,12 @@ export default function Page() {
     removeDecisionOption,
     runPreview,
     setDecisionOption,
+    setRoadmapPhase,
     setAssumption,
     setSelectedTemplateSlug,
+    roadmapError,
+    roadmapPhases,
+    removeRoadmapPhase,
   } = useHomeWorkspace();
 
   const activeInitiative = useMemo(
@@ -123,6 +131,14 @@ export default function Page() {
 
     if (didSave) {
       setActiveTab('roadmap');
+    }
+  };
+
+  const saveRoadmapAndReturnToBusinessCase = async () => {
+    const didSave = await persistRoadmap();
+
+    if (didSave) {
+      setActiveTab('business-case');
     }
   };
 
@@ -485,47 +501,109 @@ export default function Page() {
             Sequence implementation from discovery to measurable outcomes.
           </p>
 
+          {isRoadmapLoading ? (
+            <p className="mt-3 text-sm text-slate-300">Loading roadmap...</p>
+          ) : null}
+
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-brand-100/80">Phase 1</p>
-              <h3 className="mt-2 text-base font-semibold">Discovery & Scope</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Finalize initiative goals, assumptions, and baseline metrics.
-              </p>
-            </article>
-            <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-brand-100/80">Phase 2</p>
-              <h3 className="mt-2 text-base font-semibold">Pilot & Validate</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Deploy controlled pilot with KPI checkpoints and risk controls.
-              </p>
-            </article>
-            <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-brand-100/80">Phase 3</p>
-              <h3 className="mt-2 text-base font-semibold">Scale & Operate</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Expand rollout and track realized value against plan.
-              </p>
-            </article>
-            <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-brand-100/80">Phase 4</p>
-              <h3 className="mt-2 text-base font-semibold">Govern & Improve</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Run quarterly optimization with audit-ready documentation.
-              </p>
-            </article>
+            {roadmapPhases.map((phase, index) => (
+              <article
+                key={`${phase.id ?? 'draft'}-${index}`}
+                className="rounded-2xl border border-white/10 bg-slate-950/35 p-4"
+              >
+                <p className="text-xs uppercase tracking-[0.16em] text-brand-100/80">
+                  Phase {index + 1}
+                </p>
+                <div className="mt-2 grid gap-2">
+                  <input
+                    className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
+                    value={phase.title}
+                    onChange={(event) => setRoadmapPhase(index, 'title', event.target.value)}
+                    placeholder="Phase title"
+                  />
+                  <input
+                    className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
+                    value={phase.lane}
+                    onChange={(event) => setRoadmapPhase(index, 'lane', event.target.value)}
+                    placeholder="Lane"
+                  />
+                  <textarea
+                    className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
+                    rows={3}
+                    value={phase.deliverables}
+                    onChange={(event) => setRoadmapPhase(index, 'deliverables', event.target.value)}
+                    placeholder="Deliverables"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-xs text-slate-400">
+                      Start date
+                      <input
+                        className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        type="date"
+                        value={phase.startDate ? phase.startDate.slice(0, 10) : ''}
+                        onChange={(event) =>
+                          setRoadmapPhase(
+                            index,
+                            'startDate',
+                            event.target.value.length > 0 ? event.target.value : '',
+                          )
+                        }
+                      />
+                    </label>
+                    <label className="text-xs text-slate-400">
+                      End date
+                      <input
+                        className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        type="date"
+                        value={phase.endDate ? phase.endDate.slice(0, 10) : ''}
+                        onChange={(event) =>
+                          setRoadmapPhase(
+                            index,
+                            'endDate',
+                            event.target.value.length > 0 ? event.target.value : '',
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <Button
+                      variant="ghost"
+                      onClick={() => removeRoadmapPhase(index)}
+                      disabled={roadmapPhases.length <= 1}
+                    >
+                      Remove Phase
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={addRoadmapPhase}>
+              Add Phase
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={persistRoadmap}
+              disabled={!activeInitiativeId || isRoadmapSaving}
+            >
+              {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
+            </Button>
+            {roadmapError ? <p className="text-sm text-rose-300">{roadmapError}</p> : null}
           </div>
 
           <p className="mt-4 text-xs uppercase tracking-[0.16em] text-slate-400">
-            Next step: persist roadmap phases and timeline dates for each initiative.
+            Roadmap phases are now saved per initiative to continue planning over time.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => goToTab('decision-matrix')}>
               Back to Decision Matrix
             </Button>
-            <Button variant="secondary" onClick={() => goToTab('business-case')}>
-              Review Business Case
+            <Button variant="secondary" onClick={saveRoadmapAndReturnToBusinessCase}>
+              Save and Return to Business Case
             </Button>
           </div>
         </section>

@@ -1,6 +1,7 @@
 # MEMORY
 
 ## Locked Product Decisions
+
 - Product title: AI Decision Studio
 - Primary user: CTO + product/ops leaders
 - Offline except AI calls
@@ -10,7 +11,12 @@
 - Template library included in v1
 
 ## UX Direction
+
 - Premium and readable
 - Mobile-first layouts
 - Strong typography
 - Export-ready visuals
+
+## Latest Session Handoff
+
+- `docs/agent/handoff-2026-04-19.md`

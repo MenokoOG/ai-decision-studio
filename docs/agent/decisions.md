@@ -29,3 +29,4 @@
 - Gate Decision Matrix and Roadmap navigation behind a valid Business Case workspace so users follow a deterministic, data-first flow.
 - Persist decision matrix options per initiative in the `Decision` table and recompute `totalScore` server-side using fixed weighted scoring rules.
 - Treat decision scoring as deterministic domain logic in the main/service layer, with renderer editing as input only.
+- Persist roadmap phases per initiative in `RoadmapPhase` with explicit ordering and normalized date fields, and rehydrate roadmap state from DB on initiative open.
