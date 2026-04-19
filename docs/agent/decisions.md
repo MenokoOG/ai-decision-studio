@@ -19,3 +19,13 @@
 - Keep cost and benefit lock state in deterministic line records (`isLocked`, `lockReason`) so AI changes can be guarded at service boundaries.
 - Seed a compact built-in template library via Prisma seed script to ensure deterministic offline bootstrap.
 - Use SQLite local database with initial migration committed from Prisma schema as source of truth.
+- Add explicit typed IPC contracts in `apps/desktop/src/shared/ipc.ts` and expose only minimal preload methods for renderer-safe data access.
+- Keep template retrieval in Electron main process through Prisma, and consume it in renderer via hook/service rather than hardcoded template arrays.
+- Route business-case preview calculations through deterministic calculator functions and return only computed outputs to renderer.
+- Persist initiatives as first-class records created from template selections, with lightweight `initiative.created` audit payload linking template origin.
+- Persist business-case inputs by writing deterministic cost/benefit lines and storing non-line assumptions (`baselineAnnualCost`, `horizonYears`) in auditable `business-case.saved` events.
+- Rehydrate renderer workspace state from persisted initiative records so business-case sessions can be reopened without recomputing from transient UI state.
+- Organize initiative editing with a tabbed workspace IA (`Business Case`, `Decision Matrix`, `Roadmap`) to keep v1 navigation clear while enabling incremental feature completion per tab.
+- Gate Decision Matrix and Roadmap navigation behind a valid Business Case workspace so users follow a deterministic, data-first flow.
+- Persist decision matrix options per initiative in the `Decision` table and recompute `totalScore` server-side using fixed weighted scoring rules.
+- Treat decision scoring as deterministic domain logic in the main/service layer, with renderer editing as input only.

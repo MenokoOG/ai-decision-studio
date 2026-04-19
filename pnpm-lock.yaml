@@ -64,7 +64,7 @@ importers:
         specifier: ^7.0.3
         version: 7.0.3
       electron:
-        specifier: ^31.7.7
+        specifier: 31.7.7
         version: 31.7.7
       eslint:
         specifier: ^8.57.1
