@@ -9,6 +9,7 @@
 - [x] Add lint, format, typecheck, test scripts
 - [x] Scaffold web runtime under `apps/web`
 - [x] Scaffold dedicated backend runtime under `apps/api` (Express + middleware + layered modules)
+- [x] Migrate backend runtime to NestJS with versioned API routing and Swagger docs endpoint
 - [x] Add deterministic business-case preview API route in web app
 - [ ] Build complete web initiative workspace (business case, matrix, roadmap)
 
@@ -64,6 +65,9 @@
 - [x] New web runtime scaffolding was created (`apps/web`) with shared UI primitives and typed utilities.
 - [x] Web route `POST /api/business-case/preview` now validates input with zod and calls deterministic shared calculator logic.
 - [x] Initial web page (`apps/web/src/app/page.tsx`) now supports worksheet editing and API-backed deterministic preview.
+- [x] Web UX now uses button-driven workflow screens with guided tips and a separate quick estimate calculator before worksheet entry.
+- [x] Added AI cost readiness capture checklist covering infrastructure, model/API spend, data pipelines, MLOps, talent, integration, security/compliance, reliability/risk, product/UX, finance, legal/IP, and change management.
+- [x] Added versioned Nest initiatives CRUD endpoints backed by Prisma persistence (`/api/v1/initiatives`).
 - [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
 - [ ] Add provider settings and auditable AI actions through server-side app service layer.
 

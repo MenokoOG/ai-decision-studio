@@ -2,8 +2,8 @@
 
 - Use web-first architecture with `apps/web` as the primary product runtime.
 - Keep `apps/desktop` in maintenance mode while migration completes.
-- Use Next.js route handlers/server actions as the initial BFF layer.
-- Do not use Nest in v1.
+- Use NestJS in `apps/api` as the primary backend service runtime.
+- Keep APIs versioned with URI strategy (`/api/v1/*`) and maintain Swagger docs.
 - Use Postgres + Prisma for web persistence target.
 - Keep resilient local draft UX where practical, but prioritize online-first workflows.
 - Prioritize clean exports slightly over imports.

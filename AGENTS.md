@@ -51,8 +51,9 @@ Build **AI Decision Studio by Menoko OG** as a secure web-first platform for CTO
 ## Platform direction
 - `apps/web` is the primary product runtime
 - `apps/desktop` is maintenance-only while migration completes
-- Use Next.js route handlers/server actions as the initial BFF layer
+- Use `apps/api` (NestJS) as the primary backend service with versioned APIs
 - Use Prisma + Postgres for web persistence
+- Treat `original-worksheets` artifacts as source of truth for worksheet field coverage and financial flow
 
 ## Read these docs next
 - `docs/agent/tasks.md`

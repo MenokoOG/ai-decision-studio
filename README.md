@@ -9,6 +9,7 @@ Premium web-first workspace for evaluating AI initiatives.
 Web-first platform built with Next.js, TypeScript, Tailwind, Prisma, deterministic calculators, and a guarded AI assistant.
 
 `apps/web` is the primary runtime. `apps/desktop` remains available as a transitional shell while migration completes.
+`apps/api` is the primary NestJS backend runtime.
 
 ## Start
 
@@ -20,10 +21,13 @@ pnpm dev
 ## Useful Commands
 
 ```bash
+pnpm dev:full
 pnpm dev:web
 pnpm dev:api
 pnpm dev:desktop
 pnpm --filter web typecheck
+pnpm --filter api typecheck
+pnpm --filter api docs:api
 ```
 
 ## Frontend <-> Backend
@@ -31,6 +35,14 @@ pnpm --filter web typecheck
 - Web app runs on `http://localhost:3100`
 - API app runs on `http://localhost:4000`
 - Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000` in the web environment to call the dedicated backend.
+- Swagger docs: `http://localhost:4000/api/docs`
+- Versioned API base: `http://localhost:4000/api/v1`
+
+## Workflow Design
+
+- The UI uses workflow buttons that open one screen at a time to keep complexity manageable.
+- A quick estimate calculator is available before detailed worksheet entry.
+- `original-worksheets` files are treated as source of truth for worksheet field coverage.
 
 ## For coding agents
 

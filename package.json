@@ -7,6 +7,7 @@
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
+    "dev:full": "NEXT_PUBLIC_API_BASE_URL=http://localhost:4000 turbo run dev --filter=api --filter=web",
     "dev:desktop": "pnpm --filter desktop dev",
     "build": "turbo run build",
     "lint": "turbo run lint",

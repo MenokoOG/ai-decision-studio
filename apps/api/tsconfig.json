@@ -9,6 +9,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
     "paths": {
       "@ai-cost-tool/calculators/src/businessCase": [
         "./../../packages/calculators/src/businessCase.ts"
