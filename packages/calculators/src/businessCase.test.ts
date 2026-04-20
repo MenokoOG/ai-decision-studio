@@ -44,22 +44,22 @@ test('projects one-time in year 1 and annual in years 2+', () => {
   const result = evaluateBusinessCase(createInput());
 
   assert.deepEqual(result.yearLabels, ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5']);
-  assert.equal(result.sections[0].rows[0].yearlyValues[0], 120000);
+  assert.equal(result.sections[0].rows[0].yearlyValues[0], 150000);
   assert.equal(result.sections[0].rows[0].yearlyValues[1], 30000);
-  assert.equal(result.sections[1].rows[0].yearlyValues[0], 0);
+  assert.equal(result.sections[1].rows[0].yearlyValues[0], 140000);
   assert.equal(result.sections[1].rows[0].yearlyValues[1], 140000);
 });
 
 test('computes deterministic totals and running net values', () => {
   const result = evaluateBusinessCase(createInput());
 
-  assert.equal(result.totalOneTimeCost, 130000);
+  assert.equal(result.totalOneTimeCost, 165000);
   assert.equal(result.totalAnnualRunCost, 35000);
   assert.equal(result.annualSavings, 140000);
-  assert.equal(result.totalCostOfOwnership, 270000);
-  assert.equal(result.totalBenefit, 560000);
-  assert.equal(result.netValue, 290000);
+  assert.equal(result.totalCostOfOwnership, 305000);
+  assert.equal(result.totalBenefit, 700000);
+  assert.equal(result.netValue, 395000);
 
-  assert.deepEqual(result.netYearTotals, [-130000, 105000, 105000, 105000, 105000]);
-  assert.deepEqual(result.runningNetTotals, [-130000, -25000, 80000, 185000, 290000]);
+  assert.deepEqual(result.netYearTotals, [-25000, 105000, 105000, 105000, 105000]);
+  assert.deepEqual(result.runningNetTotals, [-25000, 80000, 185000, 290000, 395000]);
 });

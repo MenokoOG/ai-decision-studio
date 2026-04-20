@@ -72,6 +72,22 @@
 - [x] Added auto-save draft cadence (30s), deterministic snapshot endpoints (`POST/GET /api/v1/initiatives/:id/snapshots`), and API-backed confidence scoring (`GET /api/v1/initiatives/:id/confidence`).
 - [x] Fixed runtime 500s on initiatives and business-case preview by hardening Nest DI injection in controllers/services used by web persistence flow.
 - [x] Improved workspace persistence UX with auto-open most recent initiative, unsaved-changes indicator, autosave status chip, and inline save progress feedback.
+- [x] Updated README to reflect current web + NestJS + Prisma stack and removed coding-agent-specific onboarding content.
+- [x] Removed readiness notes fields from web checklist UX and applied a premium visual polish pass for end-user presentation.
+- [x] Completed broader customer-facing UI refinement across workflow, readiness, and summary sections with richer visual hierarchy and executive KPI framing.
+- [x] Corrected worksheet parity calculation model so Year 1 uses one-time + annual values (matching source workbook formula pattern), with updated deterministic expectations.
+- [x] Added comprehension-focused UX upgrades: explicit calculator entry, second calculate action lower on page, dedicated Use Cases section, and full Help section.
+- [ ] Implement section-form interaction model from workspace launcher (open section -> complete form -> close section).
+- [ ] Add reusable section form shell component with required controls (`Save`, `Calculate`, `Clear`, `Close`).
+- [ ] Migrate `Scope & Baseline` into its own section form with save/calculate/clear/close actions.
+- [ ] Migrate `Costs` into its own section form with save/calculate/clear/close actions.
+- [ ] Migrate `Benefits` into its own section form with save/calculate/clear/close actions.
+- [ ] Migrate `Risk Mitigations` into its own section form with save/calculate/clear/close actions.
+- [ ] Migrate `Readiness` into its own section form with save/calculate/clear/close actions.
+- [ ] Migrate `Summary` into its own section view with close action and recompute shortcut.
+- [ ] Ensure every section-level `Calculate` action contributes to and refreshes the shared overall report state.
+- [ ] Add section-level clear behavior guardrail (confirm before destructive clear).
+- [ ] Add mobile QA pass for section form open/close and sticky action controls.
 - [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
 - [ ] Add provider settings and auditable AI actions through server-side app service layer.
 

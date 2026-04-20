@@ -88,7 +88,7 @@ export function fiveYearTotal(lines: LineItem[]) {
 function projectRow(line: WorksheetLineItem, horizonYears: number): BusinessCaseProjectionRow {
   const yearlyValues = Array.from({ length: horizonYears }, (_unused, index) => {
     if (index === 0) {
-      return normalizeCurrency(line.oneTime);
+      return normalizeCurrency(line.oneTime + line.annual);
     }
 
     return normalizeCurrency(line.annual);

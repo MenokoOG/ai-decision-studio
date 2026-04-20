@@ -32,6 +32,8 @@
 - Complete roadmap editor wiring in renderer using hook-owned roadmap state/actions (`roadmapPhases`, `setRoadmapPhase`, `addRoadmapPhase`, `removeRoadmapPhase`, `persistRoadmap`) to preserve UI/domain separation.
 - Implement Markdown export as a typed IPC flow (`export:initiative-markdown`) generated in main process from persisted initiative workspace + decision matrix + roadmap and rendered by `packages/exporters` for clean deterministic output.
 - Represent Business Case assumptions as worksheet-parity sectioned rows (`costRows`, `benefitRows`, `mitigationRows`) instead of single aggregate implementation/savings fields.
-- Keep yearly projection logic deterministic in `packages/calculators` with Year 1 as one-time and Year 2+ as annual values for each row, then derive section totals, net yearly totals, and running cumulative totals.
+- Keep yearly projection logic deterministic in `packages/calculators` with Year 1 as one-time + annual and Year 2+ as annual values for each row, then derive section totals, net yearly totals, and running cumulative totals.
 - Persist worksheet rows through typed web APIs using explicit categories (`COST`, `BENEFIT`, `MITIGATION`) while preserving backward compatibility with legacy categories (`IMPLEMENTATION`, `SAVINGS`) during migration.
 - Expose explicit workspace persistence feedback in web UX: always surface dirty state (`Unsaved changes` vs `All changes saved`), live autosave status (`pending`, `saving`, `saved`, `failed`), and manual save progress so users can trust initiative state durability.
+- Replace single-page section editing with section-specific form experiences opened from the main workspace and closed explicitly by users.
+- Each section form must provide core user controls at minimum: `Save`, `Calculate`, `Clear`, and `Close`.

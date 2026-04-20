@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Calculator, Compass, Loader2, Sparkles } from 'lucide-react';
+import { Calculator, Compass, Gauge, Layers3, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,7 +51,7 @@ type InitiativeRecord = {
 
 type WorkspaceStatePayload = {
   input: BusinessCasePreviewInput;
-  readiness: Record<string, { status: 'unknown' | 'draft' | 'ready'; notes: string }>;
+  readiness: Record<string, { status: 'unknown' | 'draft' | 'ready' }>;
   activeScreen?: WorkflowScreen;
   quickEstimate?: {
     quickBaseline: number;
@@ -625,18 +625,8 @@ export default function HomePage() {
     setReadiness((previous) => ({
       ...previous,
       [itemKey]: {
-        ...(previous[itemKey] ?? { notes: '' }),
+        ...(previous[itemKey] ?? {}),
         status,
-      },
-    }));
-  };
-
-  const setReadinessNotes = (itemKey: string, notes: string) => {
-    setReadiness((previous) => ({
-      ...previous,
-      [itemKey]: {
-        ...(previous[itemKey] ?? { status: 'unknown' as const }),
-        notes,
       },
     }));
   };
@@ -674,25 +664,28 @@ export default function HomePage() {
   };
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur sm:p-8">
+    <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="rounded-3xl border border-white/20 bg-gradient-to-br from-[#132a57]/70 via-[#142344]/70 to-[#0f2131]/70 p-6 shadow-[0_20px_80px_rgba(2,12,27,0.45)] backdrop-blur-xl sm:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-brand-100/80">Web Platform Preview</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-cyan-100/90">Executive AI Portfolio Planning</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-5xl">AI Decision Studio</h1>
             <p className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-slate-500">by Menoko OG</p>
-            <p className="mt-3 max-w-2xl text-sm text-slate-300 sm:text-base">
-              Guided AI investment workflow for teams planning from startup through enterprise-scale legacy modernization.
+            <p className="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
+              Model AI initiative cost, value, and delivery risk with deterministic outputs designed for executive decisions.
             </p>
           </div>
-          <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm text-brand-50">
-            API-backed deterministic calculations
+          <div className="rounded-2xl border border-cyan-300/35 bg-cyan-500/12 px-4 py-3 text-sm text-cyan-50">
+            Live API-backed financial projections
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button className="gap-2" onClick={calculate} disabled={isCalculating}>
             <Sparkles className="size-4" />
             {isCalculating ? 'Calculating...' : 'Calculate Business Case'}
+          </Button>
+          <Button variant="outline" onClick={() => setActiveScreen('quick-estimate')}>
+            Open Calculators
           </Button>
           <Button variant="outline" onClick={() => setInput(createDefaultBusinessCaseInput())}>
             Reset Template
@@ -732,16 +725,38 @@ export default function HomePage() {
             </span>
           </span>
         </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Workspace</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">
+              {selectedInitiativeId ? 'Initiative active' : 'No initiative selected'}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Readiness</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">{readinessStats.completionPercent.toFixed(0)}% complete</p>
+          </div>
+          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Confidence score</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">
+              {confidenceScore === null ? 'Pending checklist data' : `${confidenceScore.toFixed(1)}%`}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Snapshots</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">{snapshotCount} saved versions</p>
+          </div>
+        </div>
         <div className="mt-4 rounded-2xl border border-sky-300/30 bg-sky-500/10 p-4 text-sm text-sky-100">
-          <p className="font-semibold">Source of Truth</p>
+          <p className="font-semibold">Decision-grade outputs</p>
           <p className="mt-1">
-            Fields and assumptions are aligned to your course artifacts in original-worksheets, and the calculator remains deterministic for auditable decision-making.
+            Calculations remain deterministic, auditable, and aligned to worksheet parity for reliable board-level discussions.
           </p>
         </div>
         {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
       </section>
 
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">Project Workspace</h2>
         <p className="mt-1 text-sm text-slate-300">
           Create or open an initiative to persist this workflow between sessions.
@@ -822,38 +837,85 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">Guided Workflow</h2>
         <p className="mt-1 text-sm text-slate-300">
           Use the buttons to open one screen at a time. This keeps the UI clean while exposing every field needed for informed decisions.
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {workflowScreens.map((screen) => (
+          {workflowScreens.map((screen, index) => (
             <button
               key={screen.id}
               type="button"
               onClick={() => setActiveScreen(screen.id)}
               className={`rounded-xl border p-3 text-left transition ${
                 activeScreen === screen.id
-                  ? 'border-brand-400/70 bg-brand-500/15'
-                  : 'border-white/10 bg-slate-950/30 hover:border-white/25'
+                  ? 'border-cyan-300/70 bg-cyan-500/15 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]'
+                  : 'border-white/10 bg-slate-950/30 hover:border-white/25 hover:bg-slate-900/40'
               }`}
             >
-              <p className="text-sm font-semibold text-slate-100">{screen.label}</p>
+              <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Step {index + 1}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-100">{screen.label}</p>
               <p className="mt-1 text-xs text-slate-400">{screen.tip}</p>
             </button>
           ))}
         </div>
       </section>
 
+      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+        <h2 className="text-lg font-semibold">Use Cases</h2>
+        <p className="mt-1 text-sm text-slate-300">
+          Use this tool before committing budget, selecting architecture, or presenting AI investment tradeoffs to leadership.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">Prioritize AI initiatives</h3>
+            <p className="mt-1 text-xs text-slate-400">Compare likely value and costs before selecting what to fund first.</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">Plan enterprise modernization</h3>
+            <p className="mt-1 text-xs text-slate-400">Model delivery risk and operational readiness across legacy integration paths.</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">Prepare board-level updates</h3>
+            <p className="mt-1 text-xs text-slate-400">Share deterministic totals, payback outlook, and readiness gaps with confidence.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+        <h2 className="text-lg font-semibold">Help: How To Use This App</h2>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">1. Start in Quick Estimate</h3>
+            <p className="mt-1 text-xs text-slate-400">Open the Quick Estimate screen to run directional numbers and usage scaling costs first.</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">2. Fill Scope and Worksheet</h3>
+            <p className="mt-1 text-xs text-slate-400">Enter baseline, then complete Costs, Benefits, and Risk Mitigations with one-time and annual values.</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">3. Track Readiness</h3>
+            <p className="mt-1 text-xs text-slate-400">Mark each readiness area as Unknown, Draft, or Ready to surface delivery risk early.</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <h3 className="text-sm font-semibold text-slate-100">4. Calculate and Review Summary</h3>
+            <p className="mt-1 text-xs text-slate-400">Use Calculate to refresh deterministic totals, ROI, payback, and yearly net projections.</p>
+          </article>
+        </div>
+        <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-4 text-xs text-cyan-100">
+          Formula note: Year 1 includes one-time plus annual values. Years 2+ include annual values only. Running totals are cumulative year-over-year.
+        </div>
+      </section>
+
       {activeScreen === 'quick-estimate' ? (
-        <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+        <section id="calculators" className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <Calculator className="size-5" />
-            <h3 className="text-lg font-semibold">Quick Estimate Calculator</h3>
+            <h3 className="text-lg font-semibold">Calculator Zone: Quick Estimate</h3>
           </div>
           <p className="mt-1 text-sm text-slate-300">
-            Use this for rough what-if analysis before completing worksheet details.
+            Use this for rough what-if analysis before completing worksheet details. This is the first calculator section.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="text-sm text-slate-200">
@@ -1003,11 +1065,9 @@ export default function HomePage() {
       ) : null}
 
       {activeScreen === 'scope' ? (
-        <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
           <h3 className="text-lg font-semibold">Scope & Baseline</h3>
-          <p className="mt-1 text-sm text-slate-300">
-            Tip: set this first to anchor all downstream cost/benefit assumptions.
-          </p>
+          <p className="mt-1 text-sm text-slate-300">Set your baseline first so downstream cost and value projections stay grounded.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm text-slate-200">
               Baseline annual cost
@@ -1044,7 +1104,7 @@ export default function HomePage() {
                 <h3 className="text-base font-semibold">{section.title}</h3>
                 <p className="mt-1 text-sm text-slate-300">{section.subtitle}</p>
                 <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs text-amber-100">
-                  Guide: enter Year-1 setup spend under one-time, then steady-state spend/value under annual.
+                  Enter Year 1 setup spend under one-time, then steady-state spend/value under annual.
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -1081,22 +1141,34 @@ export default function HomePage() {
       ) : null}
 
       {activeScreen === 'readiness' ? (
-        <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
           <h3 className="text-lg font-semibold">AI Cost Readiness Checklist</h3>
           <p className="mt-1 text-sm text-slate-300">
             Make hidden cost and execution complexity visible early. Mark each item as Unknown, Draft, or Ready.
           </p>
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
-            <p>Ready: {readinessStats.readyCount}</p>
-            <p>Draft: {readinessStats.draftCount}</p>
-            <p>Unknown: {readinessStats.unknownCount}</p>
-            <p>Completion: {readinessStats.completionPercent.toFixed(0)}%</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm">
+              <p className="text-xs uppercase tracking-[0.12em] text-emerald-200/80">Ready</p>
+              <p className="mt-1 text-lg font-semibold text-emerald-100">{readinessStats.readyCount}</p>
+            </div>
+            <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-3 text-sm">
+              <p className="text-xs uppercase tracking-[0.12em] text-sky-200/80">Draft</p>
+              <p className="mt-1 text-lg font-semibold text-sky-100">{readinessStats.draftCount}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm">
+              <p className="text-xs uppercase tracking-[0.12em] text-amber-200/80">Unknown</p>
+              <p className="mt-1 text-lg font-semibold text-amber-100">{readinessStats.unknownCount}</p>
+            </div>
+            <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm">
+              <p className="text-xs uppercase tracking-[0.12em] text-violet-200/80">Completion</p>
+              <p className="mt-1 text-lg font-semibold text-violet-100">{readinessStats.completionPercent.toFixed(0)}%</p>
+            </div>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
             {READINESS_ITEMS.map((item) => {
-              const state = readiness[item.key] ?? { status: 'unknown', notes: '' };
+              const state = readiness[item.key] ?? { status: 'unknown' };
               return (
                 <article key={item.key} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
                   <p className="text-sm font-semibold text-slate-100">{item.label}</p>
@@ -1106,7 +1178,7 @@ export default function HomePage() {
                     <button
                       type="button"
                       className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'unknown' ? 'border-amber-300/60 bg-amber-500/20' : 'border-white/10 bg-slate-900/45'
+                        state.status === 'unknown' ? 'border-amber-300/60 bg-amber-500/20 text-amber-100' : 'border-white/10 bg-slate-900/45'
                       }`}
                       onClick={() => setReadinessStatus(item.key, 'unknown')}
                     >
@@ -1115,7 +1187,7 @@ export default function HomePage() {
                     <button
                       type="button"
                       className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'draft' ? 'border-sky-300/60 bg-sky-500/20' : 'border-white/10 bg-slate-900/45'
+                        state.status === 'draft' ? 'border-sky-300/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-slate-900/45'
                       }`}
                       onClick={() => setReadinessStatus(item.key, 'draft')}
                     >
@@ -1125,7 +1197,7 @@ export default function HomePage() {
                       type="button"
                       className={`rounded-lg border px-2 py-1 text-xs ${
                         state.status === 'ready'
-                          ? 'border-emerald-300/60 bg-emerald-500/20'
+                          ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100'
                           : 'border-white/10 bg-slate-900/45'
                       }`}
                       onClick={() => setReadinessStatus(item.key, 'ready')}
@@ -1133,16 +1205,6 @@ export default function HomePage() {
                       Ready
                     </button>
                   </div>
-
-                  <label className="mt-2 block text-xs text-slate-400">
-                    Notes
-                    <textarea
-                      className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
-                      value={state.notes}
-                      onChange={(event) => setReadinessNotes(item.key, event.target.value)}
-                      rows={2}
-                    />
-                  </label>
                 </article>
               );
             })}
@@ -1152,7 +1214,7 @@ export default function HomePage() {
 
       {activeScreen === 'summary' ? (
         <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
             <h2 className="text-lg font-semibold">Decision Summary</h2>
             <p className="mt-1 text-sm text-slate-300">
               Deterministic outputs from worksheet inputs. No AI guesswork in the numbers.
@@ -1191,7 +1253,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <Card className="rounded-3xl border-white/10 bg-white/5">
+          <Card className="rounded-3xl border-white/15 bg-[#0f1a35]/55 backdrop-blur-sm">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="flex items-center gap-2">
                 <Compass className="size-4" />
@@ -1202,11 +1264,40 @@ export default function HomePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-5 pb-5 pt-0 text-sm text-slate-300">
-              For now, use this deterministic summary to make informed decisions before activating recommendation agents.
+              <div className="space-y-3">
+                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                  <Gauge className="mt-0.5 size-4 text-cyan-200" />
+                  <p>Use summary metrics to decide whether this initiative should move to pilot, redesign, or pause.</p>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                  <Layers3 className="mt-0.5 size-4 text-violet-200" />
+                  <p>Save snapshots after each major assumption shift to track how strategy changes impact ROI.</p>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                  <ShieldCheck className="mt-0.5 size-4 text-emerald-200" />
+                  <p>Treat unknown readiness items as execution risk until cost ownership and controls are defined.</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </section>
       ) : null}
+
+      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+        <h2 className="text-lg font-semibold">Recalculate From Here</h2>
+        <p className="mt-1 text-sm text-slate-300">
+          You do not need to scroll back up. Use this button anytime after editing fields.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button className="gap-2" onClick={calculate} disabled={isCalculating}>
+            <Sparkles className="size-4" />
+            {isCalculating ? 'Calculating...' : 'Calculate Business Case'}
+          </Button>
+          <Button variant="outline" onClick={() => setActiveScreen('summary')}>
+            Open Decision Summary
+          </Button>
+        </div>
+      </section>
     </main>
   );
 }

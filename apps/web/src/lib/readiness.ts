@@ -71,7 +71,6 @@ export const READINESS_ITEMS: ReadinessItem[] = [
 
 export type ReadinessState = {
   status: ReadinessStatus;
-  notes: string;
 };
 
 export function createDefaultReadinessState(): Record<string, ReadinessState> {
@@ -80,7 +79,6 @@ export function createDefaultReadinessState(): Record<string, ReadinessState> {
       item.key,
       {
         status: 'unknown' satisfies ReadinessStatus,
-        notes: '',
       },
     ]),
   );
