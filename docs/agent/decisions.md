@@ -34,3 +34,4 @@
 - Represent Business Case assumptions as worksheet-parity sectioned rows (`costRows`, `benefitRows`, `mitigationRows`) instead of single aggregate implementation/savings fields.
 - Keep yearly projection logic deterministic in `packages/calculators` with Year 1 as one-time and Year 2+ as annual values for each row, then derive section totals, net yearly totals, and running cumulative totals.
 - Persist worksheet rows through typed web APIs using explicit categories (`COST`, `BENEFIT`, `MITIGATION`) while preserving backward compatibility with legacy categories (`IMPLEMENTATION`, `SAVINGS`) during migration.
+- Expose explicit workspace persistence feedback in web UX: always surface dirty state (`Unsaved changes` vs `All changes saved`), live autosave status (`pending`, `saving`, `saved`, `failed`), and manual save progress so users can trust initiative state durability.

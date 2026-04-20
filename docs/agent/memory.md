@@ -19,4 +19,4 @@
 
 ## Latest Session Handoff
 
-- `docs/agent/handoff-2026-04-19.md`
+- `docs/agent/handoff-2026-04-20.md`

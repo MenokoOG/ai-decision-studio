@@ -68,6 +68,10 @@
 - [x] Web UX now uses button-driven workflow screens with guided tips and a separate quick estimate calculator before worksheet entry.
 - [x] Added AI cost readiness capture checklist covering infrastructure, model/API spend, data pipelines, MLOps, talent, integration, security/compliance, reliability/risk, product/UX, finance, legal/IP, and change management.
 - [x] Added versioned Nest initiatives CRUD endpoints backed by Prisma persistence (`/api/v1/initiatives`).
+- [x] Added initiative workspace draft save/load endpoints (`GET/PATCH /api/v1/initiatives/:id/workspace-state`) and wired web create/list/open/save flow.
+- [x] Added auto-save draft cadence (30s), deterministic snapshot endpoints (`POST/GET /api/v1/initiatives/:id/snapshots`), and API-backed confidence scoring (`GET /api/v1/initiatives/:id/confidence`).
+- [x] Fixed runtime 500s on initiatives and business-case preview by hardening Nest DI injection in controllers/services used by web persistence flow.
+- [x] Improved workspace persistence UX with auto-open most recent initiative, unsaved-changes indicator, autosave status chip, and inline save progress feedback.
 - [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
 - [ ] Add provider settings and auditable AI actions through server-side app service layer.
 

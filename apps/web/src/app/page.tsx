@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Calculator, Compass, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Calculator, Compass, Loader2, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +38,34 @@ type WorkflowScreen =
   | 'risks'
   | 'readiness'
   | 'summary';
+
+type InitiativePhase = 'DISCOVERY' | 'DESIGN' | 'BUILD' | 'PILOT' | 'SCALE' | 'GOVERNANCE';
+
+type InitiativeRecord = {
+  id: string;
+  title: string;
+  summary: string;
+  owner: string;
+  phase: InitiativePhase;
+};
+
+type WorkspaceStatePayload = {
+  input: BusinessCasePreviewInput;
+  readiness: Record<string, { status: 'unknown' | 'draft' | 'ready'; notes: string }>;
+  activeScreen?: WorkflowScreen;
+  quickEstimate?: {
+    quickBaseline: number;
+    quickReductionPercent: number;
+    quickOneTime: number;
+    quickAnnualRun: number;
+    quickHorizon: number;
+    monthlyActiveUsers: number;
+    requestsPerUserPerMonth: number;
+    avgPromptTokens: number;
+    avgCompletionTokens: number;
+    apiCostPer1kTokens: number;
+  };
+};
 
 function asCurrency(value: number | null) {
   if (value === null) {
@@ -85,6 +113,20 @@ function getSectionTotal(
 
 export default function HomePage() {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? '';
+  const [initiatives, setInitiatives] = useState<InitiativeRecord[]>([]);
+  const [selectedInitiativeId, setSelectedInitiativeId] = useState<string | null>(null);
+  const [initiativeTitle, setInitiativeTitle] = useState('');
+  const [initiativeSummary, setInitiativeSummary] = useState('');
+  const [initiativeOwner, setInitiativeOwner] = useState('Menoko Team');
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isLoadingInitiatives, setIsLoadingInitiatives] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+  const [snapshotCount, setSnapshotCount] = useState(0);
+  const [workspaceBaselineHash, setWorkspaceBaselineHash] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastAutosaveAt, setLastAutosaveAt] = useState<string | null>(null);
   const [input, setInput] = useState<BusinessCasePreviewInput>(createDefaultBusinessCaseInput());
   const [preview, setPreview] = useState<BusinessCasePreviewResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -101,6 +143,329 @@ export default function HomePage() {
   const [avgCompletionTokens, setAvgCompletionTokens] = useState(600);
   const [apiCostPer1kTokens, setApiCostPer1kTokens] = useState(0.01);
   const [readiness, setReadiness] = useState(createDefaultReadinessState());
+
+  const apiV1 = (path: string) => `${apiBaseUrl || ''}/api/v1${path}`;
+
+  const buildWorkspaceStatePayload = (): WorkspaceStatePayload => ({
+    input,
+    readiness,
+    activeScreen,
+    quickEstimate: {
+      quickBaseline,
+      quickReductionPercent,
+      quickOneTime,
+      quickAnnualRun,
+      quickHorizon,
+      monthlyActiveUsers,
+      requestsPerUserPerMonth,
+      avgPromptTokens,
+      avgCompletionTokens,
+      apiCostPer1kTokens,
+    },
+  });
+
+  const hashWorkspaceState = (payload: WorkspaceStatePayload) => JSON.stringify(payload);
+
+  const markWorkspaceSaved = (payload: WorkspaceStatePayload, savedAtIso: string) => {
+    setWorkspaceBaselineHash(hashWorkspaceState(payload));
+    setHasUnsavedChanges(false);
+    setLastSavedAt(savedAtIso);
+    setLastAutosaveAt(savedAtIso);
+    setAutosaveStatus('saved');
+  };
+
+  const applyWorkspaceState = (payload: WorkspaceStatePayload) => {
+    setInput(payload.input);
+    setReadiness(payload.readiness);
+    if (payload.activeScreen) {
+      setActiveScreen(payload.activeScreen);
+    }
+
+    if (payload.quickEstimate) {
+      setQuickBaseline(payload.quickEstimate.quickBaseline);
+      setQuickReductionPercent(payload.quickEstimate.quickReductionPercent);
+      setQuickOneTime(payload.quickEstimate.quickOneTime);
+      setQuickAnnualRun(payload.quickEstimate.quickAnnualRun);
+      setQuickHorizon(payload.quickEstimate.quickHorizon);
+      setMonthlyActiveUsers(payload.quickEstimate.monthlyActiveUsers);
+      setRequestsPerUserPerMonth(payload.quickEstimate.requestsPerUserPerMonth);
+      setAvgPromptTokens(payload.quickEstimate.avgPromptTokens);
+      setAvgCompletionTokens(payload.quickEstimate.avgCompletionTokens);
+      setApiCostPer1kTokens(payload.quickEstimate.apiCostPer1kTokens);
+    }
+  };
+
+  const loadInitiatives = async () => {
+    setIsLoadingInitiatives(true);
+    try {
+      const response = await fetch(apiV1('/initiatives'));
+      if (!response.ok) {
+        throw new Error('Could not load initiatives.');
+      }
+
+      const data = (await response.json()) as InitiativeRecord[];
+      setInitiatives(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load initiatives.');
+    } finally {
+      setIsLoadingInitiatives(false);
+    }
+  };
+
+  const refreshConfidence = async (initiativeId: string) => {
+    try {
+      const response = await fetch(apiV1(`/initiatives/${initiativeId}/confidence`));
+      if (!response.ok) {
+        throw new Error('Could not load confidence score.');
+      }
+
+      const data = (await response.json()) as { confidenceScore: number };
+      setConfidenceScore(data.confidenceScore);
+    } catch {
+      setConfidenceScore(null);
+    }
+  };
+
+  const refreshSnapshotCount = async (initiativeId: string) => {
+    try {
+      const response = await fetch(apiV1(`/initiatives/${initiativeId}/snapshots`));
+      if (!response.ok) {
+        throw new Error('Could not load snapshots.');
+      }
+
+      const data = (await response.json()) as { snapshots: unknown[] };
+      setSnapshotCount(data.snapshots.length);
+    } catch {
+      setSnapshotCount(0);
+    }
+  };
+
+  const openInitiative = async (initiative: InitiativeRecord) => {
+    setSelectedInitiativeId(initiative.id);
+    setInitiativeTitle(initiative.title);
+    setInitiativeSummary(initiative.summary);
+    setInitiativeOwner(initiative.owner);
+
+    try {
+      const response = await fetch(apiV1(`/initiatives/${initiative.id}/workspace-state`));
+      if (!response.ok) {
+        throw new Error('Could not load workspace draft.');
+      }
+
+      const data = (await response.json()) as { state: WorkspaceStatePayload | null };
+      if (data.state) {
+        applyWorkspaceState(data.state);
+        setWorkspaceBaselineHash(hashWorkspaceState(data.state));
+        setHasUnsavedChanges(false);
+        setAutosaveStatus('idle');
+      }
+
+      if (!data.state) {
+        const currentPayload = buildWorkspaceStatePayload();
+        setWorkspaceBaselineHash(hashWorkspaceState(currentPayload));
+        setHasUnsavedChanges(false);
+        setAutosaveStatus('idle');
+      }
+
+      await refreshConfidence(initiative.id);
+      await refreshSnapshotCount(initiative.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load workspace draft.');
+    }
+  };
+
+  const createInitiative = async () => {
+    setError(null);
+
+    if (initiativeTitle.trim().length < 3 || initiativeSummary.trim().length < 3 || initiativeOwner.trim().length < 2) {
+      setError('Please provide a title, summary, and owner before creating an initiative.');
+      return;
+    }
+
+    try {
+      const response = await fetch(apiV1('/initiatives'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: initiativeTitle.trim(),
+          summary: initiativeSummary.trim(),
+          owner: initiativeOwner.trim(),
+          phase: 'DISCOVERY',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not create initiative.');
+      }
+
+      const created = (await response.json()) as InitiativeRecord;
+      await loadInitiatives();
+      await openInitiative(created);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create initiative.');
+    }
+  };
+
+  const saveWorkspaceDraft = async (options?: { silent?: boolean }) => {
+    if (!selectedInitiativeId) {
+      if (!options?.silent) {
+        setError('Create or select an initiative before saving a draft.');
+      }
+      return;
+    }
+
+    if (!options?.silent) {
+      setIsSavingDraft(true);
+      setError(null);
+      setAutosaveStatus('saving');
+    } else {
+      setAutosaveStatus('saving');
+    }
+
+    const payload = buildWorkspaceStatePayload();
+
+    try {
+      const response = await fetch(apiV1(`/initiatives/${selectedInitiativeId}/workspace-state`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not save workspace draft.');
+      }
+
+      const savedAtIso = new Date().toISOString();
+      markWorkspaceSaved(payload, savedAtIso);
+      await refreshConfidence(selectedInitiativeId);
+    } catch (err) {
+      setAutosaveStatus('error');
+      if (!options?.silent) {
+        setError(err instanceof Error ? err.message : 'Could not save workspace draft.');
+      }
+    } finally {
+      if (!options?.silent) {
+        setIsSavingDraft(false);
+      }
+    }
+  };
+
+  const saveSnapshot = async (result: BusinessCasePreviewResult) => {
+    if (!selectedInitiativeId) {
+      return;
+    }
+
+    try {
+      const response = await fetch(apiV1(`/initiatives/${selectedInitiativeId}/snapshots`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input,
+          result,
+          label: `snapshot-${new Date().toISOString()}`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not save snapshot.');
+      }
+
+      await refreshSnapshotCount(selectedInitiativeId);
+    } catch {
+      // Keep the primary calculator UX resilient even if snapshot persistence fails.
+    }
+  };
+
+  useEffect(() => {
+    void loadInitiatives();
+  }, []);
+
+  useEffect(() => {
+    if (selectedInitiativeId || initiatives.length === 0) {
+      return;
+    }
+
+    void openInitiative(initiatives[0]);
+  }, [initiatives, selectedInitiativeId]);
+
+  useEffect(() => {
+    if (!selectedInitiativeId || !workspaceBaselineHash) {
+      return;
+    }
+
+    const currentHash = hashWorkspaceState(buildWorkspaceStatePayload());
+    const dirty = currentHash !== workspaceBaselineHash;
+    setHasUnsavedChanges(dirty);
+
+    if (dirty) {
+      setAutosaveStatus('pending');
+    } else if (autosaveStatus === 'pending') {
+      setAutosaveStatus('idle');
+    }
+  }, [
+    activeScreen,
+    apiCostPer1kTokens,
+    avgCompletionTokens,
+    avgPromptTokens,
+    input,
+    monthlyActiveUsers,
+    quickAnnualRun,
+    quickBaseline,
+    quickHorizon,
+    quickOneTime,
+    quickReductionPercent,
+    readiness,
+    requestsPerUserPerMonth,
+    selectedInitiativeId,
+    workspaceBaselineHash,
+  ]);
+
+  useEffect(() => {
+    if (!selectedInitiativeId || !hasUnsavedChanges) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      void saveWorkspaceDraft({ silent: true });
+    }, 30000);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [
+    activeScreen,
+    apiCostPer1kTokens,
+    avgCompletionTokens,
+    avgPromptTokens,
+    input,
+    monthlyActiveUsers,
+    quickAnnualRun,
+    quickBaseline,
+    quickHorizon,
+    quickOneTime,
+    quickReductionPercent,
+    readiness,
+    requestsPerUserPerMonth,
+    selectedInitiativeId,
+    hasUnsavedChanges,
+  ]);
+
+  const autosaveLabel =
+    autosaveStatus === 'saving'
+      ? 'Autosave: saving...'
+      : autosaveStatus === 'pending'
+        ? 'Autosave: pending changes'
+        : autosaveStatus === 'error'
+          ? 'Autosave: failed'
+          : lastAutosaveAt
+            ? `Autosave: saved ${new Date(lastAutosaveAt).toLocaleTimeString()}`
+            : 'Autosave: idle';
 
   const sections = useMemo(
     () => [
@@ -298,7 +663,9 @@ export default function HomePage() {
         throw new Error(data.error ?? 'Failed to calculate.');
       }
 
-      setPreview(data as BusinessCasePreviewResult);
+      const result = data as BusinessCasePreviewResult;
+      setPreview(result);
+      await saveSnapshot(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to calculate.');
     } finally {
@@ -333,6 +700,37 @@ export default function HomePage() {
           <span className="rounded-full border border-emerald-300/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100">
             Backend connected
           </span>
+          <span className="rounded-full border border-slate-300/30 bg-slate-700/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100">
+            {selectedInitiativeId ? 'Initiative selected' : 'No initiative selected'}
+          </span>
+          <span className="rounded-full border border-slate-300/30 bg-slate-700/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100">
+            {lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}` : 'No draft saved yet'}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+              hasUnsavedChanges
+                ? 'border border-amber-300/40 bg-amber-500/10 text-amber-100'
+                : 'border border-emerald-300/40 bg-emerald-500/10 text-emerald-100'
+            }`}
+          >
+            {hasUnsavedChanges ? 'Unsaved changes' : 'All changes saved'}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+              autosaveStatus === 'error'
+                ? 'border border-rose-300/40 bg-rose-500/10 text-rose-100'
+                : autosaveStatus === 'saving'
+                  ? 'border border-sky-300/40 bg-sky-500/10 text-sky-100'
+                  : 'border border-slate-300/30 bg-slate-700/20 text-slate-100'
+            }`}
+          >
+            <span className="inline-flex items-center gap-2">
+              {autosaveStatus === 'saving' ? (
+                <span className="size-1.5 rounded-full bg-current animate-pulse" aria-hidden="true" />
+              ) : null}
+              {autosaveLabel}
+            </span>
+          </span>
         </div>
         <div className="mt-4 rounded-2xl border border-sky-300/30 bg-sky-500/10 p-4 text-sm text-sky-100">
           <p className="font-semibold">Source of Truth</p>
@@ -341,6 +739,87 @@ export default function HomePage() {
           </p>
         </div>
         {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+      </section>
+
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+        <h2 className="text-lg font-semibold">Project Workspace</h2>
+        <p className="mt-1 text-sm text-slate-300">
+          Create or open an initiative to persist this workflow between sessions.
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm text-slate-200">
+            Initiative title
+            <input
+              className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+              value={initiativeTitle}
+              onChange={(event) => setInitiativeTitle(event.target.value)}
+            />
+          </label>
+          <label className="text-sm text-slate-200">
+            Owner
+            <input
+              className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+              value={initiativeOwner}
+              onChange={(event) => setInitiativeOwner(event.target.value)}
+            />
+          </label>
+          <label className="text-sm text-slate-200 sm:col-span-2">
+            Summary
+            <textarea
+              className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+              rows={2}
+              value={initiativeSummary}
+              onChange={(event) => setInitiativeSummary(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button onClick={createInitiative}>Create Initiative</Button>
+          <Button variant="outline" onClick={() => void saveWorkspaceDraft()} disabled={isSavingDraft || !selectedInitiativeId}>
+            {isSavingDraft ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                Saving draft...
+              </span>
+            ) : (
+              'Save Draft'
+            )}
+          </Button>
+          <Button variant="outline" onClick={() => void loadInitiatives()} disabled={isLoadingInitiatives}>
+            {isLoadingInitiatives ? 'Refreshing...' : 'Refresh List'}
+          </Button>
+        </div>
+
+        <div className="mt-3 grid gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-3 text-xs text-slate-300 sm:grid-cols-3">
+          <p>Auto-save: every 30 seconds</p>
+          <p>Confidence score: {confidenceScore === null ? 'n/a' : `${confidenceScore.toFixed(1)}%`}</p>
+          <p>Snapshots saved: {snapshotCount}</p>
+        </div>
+
+        <div className="mt-4 grid gap-2">
+          {initiatives.length === 0 ? (
+            <p className="text-sm text-slate-400">No initiatives yet. Create one to enable save/load.</p>
+          ) : (
+            initiatives.map((initiative) => (
+              <button
+                key={initiative.id}
+                type="button"
+                className={`rounded-xl border p-3 text-left transition ${
+                  selectedInitiativeId === initiative.id
+                    ? 'border-brand-400/70 bg-brand-500/15'
+                    : 'border-white/10 bg-slate-950/30 hover:border-white/25'
+                }`}
+                onClick={() => void openInitiative(initiative)}
+              >
+                <p className="text-sm font-semibold text-slate-100">{initiative.title}</p>
+                <p className="mt-1 text-xs text-slate-400">Owner: {initiative.owner}</p>
+                <p className="mt-1 text-xs text-slate-400">{initiative.summary}</p>
+              </button>
+            ))
+          )}
+        </div>
       </section>
 
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">

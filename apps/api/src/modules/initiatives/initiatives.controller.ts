@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CreateInitiativeDto } from './dto/create-initiative.dto.js';
+import { SaveSnapshotDto } from './dto/save-snapshot.dto.js';
+import { SaveWorkspaceStateDto } from './dto/save-workspace-state.dto.js';
 import { UpdateInitiativeDto } from './dto/update-initiative.dto.js';
 import { InitiativesService } from './initiatives.service.js';
 
@@ -11,7 +13,10 @@ import { InitiativesService } from './initiatives.service.js';
   version: '1',
 })
 export class InitiativesController {
-  constructor(private readonly initiativesService: InitiativesService) {}
+  constructor(
+    @Inject(InitiativesService)
+    private readonly initiativesService: InitiativesService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List initiative workspaces.' })
@@ -35,6 +40,36 @@ export class InitiativesController {
   @ApiOperation({ summary: 'Update initiative workspace metadata.' })
   update(@Param('id') id: string, @Body() payload: UpdateInitiativeDto) {
     return this.initiativesService.update(id, payload);
+  }
+
+  @Get(':id/workspace-state')
+  @ApiOperation({ summary: 'Get latest saved workflow draft state for an initiative.' })
+  getWorkspaceState(@Param('id') id: string) {
+    return this.initiativesService.getWorkspaceState(id);
+  }
+
+  @Patch(':id/workspace-state')
+  @ApiOperation({ summary: 'Save latest workflow draft state for an initiative.' })
+  saveWorkspaceState(@Param('id') id: string, @Body() payload: SaveWorkspaceStateDto) {
+    return this.initiativesService.saveWorkspaceState(id, payload);
+  }
+
+  @Get(':id/confidence')
+  @ApiOperation({ summary: 'Get deterministic initiative confidence score from latest readiness state.' })
+  getConfidence(@Param('id') id: string) {
+    return this.initiativesService.getConfidence(id);
+  }
+
+  @Get(':id/snapshots')
+  @ApiOperation({ summary: 'List latest deterministic business-case snapshots for an initiative.' })
+  listSnapshots(@Param('id') id: string) {
+    return this.initiativesService.listSnapshots(id);
+  }
+
+  @Post(':id/snapshots')
+  @ApiOperation({ summary: 'Save a deterministic business-case snapshot for an initiative.' })
+  saveSnapshot(@Param('id') id: string, @Body() payload: SaveSnapshotDto) {
+    return this.initiativesService.saveSnapshot(id, payload);
   }
 
   @Delete(':id')

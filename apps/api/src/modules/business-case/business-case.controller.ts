@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { BusinessCaseService } from './business-case.service.js';
@@ -10,7 +10,10 @@ import { BusinessCasePreviewDto } from './dto/business-case-preview.dto.js';
   version: '1',
 })
 export class BusinessCaseController {
-  constructor(private readonly businessCaseService: BusinessCaseService) {}
+  constructor(
+    @Inject(BusinessCaseService)
+    private readonly businessCaseService: BusinessCaseService,
+  ) {}
 
   @Get('health')
   @ApiOperation({ summary: 'Business-case module health check' })

@@ -4,6 +4,6 @@ import { BusinessCaseModule } from './modules/business-case/business-case.module
 import { InitiativesModule } from './modules/initiatives/initiatives.module.js';
 
 @Module({
-  imports: [BusinessCaseModule, InitiativesModule],
+    imports: [BusinessCaseModule, InitiativesModule],
 })
-export class AppModule {}
+export class AppModule { }
