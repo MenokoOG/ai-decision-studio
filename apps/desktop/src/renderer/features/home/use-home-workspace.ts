@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { WORKSHEET_ROW_TEMPLATES } from '../../../shared/ipc';
 import type {
     BusinessCasePreviewInput,
     BusinessCasePreviewResult,
     BusinessCaseWorkspace,
+    BusinessCaseWorksheetInput,
     DecisionMatrixOptionInput,
     InitiativeSummary,
     RoadmapPhaseInput,
     TemplateSummary,
+    WorksheetSectionId,
 } from '../../../shared/ipc';
 import {
     createInitiativeFromTemplate,
+    exportInitiativeMarkdown,
     getDecisionMatrix,
     getInitiativeWorkspace,
     listInitiatives,
@@ -20,21 +24,15 @@ import {
     saveBusinessCase,
     saveDecisionMatrix,
     saveRoadmap,
+    isDesktopBridgeAvailable,
 } from './home-workspace-service';
 
-type AssumptionField =
-    | 'baselineAnnualCost'
-    | 'expectedAnnualCostReduction'
-    | 'implementationOneTimeCost'
-    | 'implementationAnnualCost'
-    | 'horizonYears';
+const DESKTOP_BRIDGE_ERROR = 'Desktop bridge unavailable. Open this screen in the Electron desktop app.';
 
 type BusinessCaseAssumptions = {
     baselineAnnualCost: number;
-    expectedAnnualCostReduction: number;
-    implementationOneTimeCost: number;
-    implementationAnnualCost: number;
     horizonYears: number;
+    worksheet: BusinessCaseWorksheetInput;
 };
 
 type DecisionMatrixEditableOption = DecisionMatrixOptionInput & {
@@ -49,13 +47,39 @@ type RoadmapEditablePhase = RoadmapPhaseInput & {
     sortOrder?: number;
 };
 
-const initialAssumptions: BusinessCaseAssumptions = {
-    baselineAnnualCost: 220000,
-    expectedAnnualCostReduction: 140000,
-    implementationOneTimeCost: 120000,
-    implementationAnnualCost: 30000,
-    horizonYears: 5,
+const WORKSHEET_SECTION_ROWS_KEY: Record<WorksheetSectionId, keyof BusinessCaseWorksheetInput> = {
+    cost: 'costRows',
+    benefit: 'benefitRows',
+    mitigation: 'mitigationRows',
 };
+
+function createWorksheetRows(section: WorksheetSectionId) {
+    return WORKSHEET_ROW_TEMPLATES[section].map((template) => ({
+        key: template.key,
+        label: template.label,
+        description: template.description,
+        oneTime: 0,
+        annual: 0,
+    }));
+}
+
+const initialAssumptions: BusinessCaseAssumptions = (() => {
+    const worksheet = {
+        costRows: createWorksheetRows('cost'),
+        benefitRows: createWorksheetRows('benefit'),
+        mitigationRows: createWorksheetRows('mitigation'),
+    };
+
+    worksheet.costRows[2].oneTime = 120000;
+    worksheet.costRows[2].annual = 30000;
+    worksheet.benefitRows[0].annual = 140000;
+
+    return {
+        baselineAnnualCost: 220000,
+        horizonYears: 5,
+        worksheet,
+    };
+})();
 
 const initialDecisionOptions: DecisionMatrixEditableOption[] = [
     {
@@ -125,6 +149,8 @@ function parseNumericInput(value: string) {
 }
 
 export function useHomeWorkspace() {
+    const hasDesktopBridge = isDesktopBridgeAvailable();
+
     const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
     const [isTemplatesLoading, setIsTemplatesLoading] = useState(true);
     const [templates, setTemplates] = useState<TemplateSummary[]>([]);
@@ -154,6 +180,8 @@ export function useHomeWorkspace() {
     const [isRoadmapLoading, setIsRoadmapLoading] = useState(false);
     const [isRoadmapSaving, setIsRoadmapSaving] = useState(false);
     const [roadmapError, setRoadmapError] = useState<string | null>(null);
+    const [isMarkdownExporting, setIsMarkdownExporting] = useState(false);
+    const [markdownExportError, setMarkdownExportError] = useState<string | null>(null);
 
     const applyWorkspace = useCallback((workspace: BusinessCaseWorkspace) => {
         setActiveInitiativeId(workspace.initiative.id);
@@ -171,6 +199,12 @@ export function useHomeWorkspace() {
     }, []);
 
     const loadInitiativeList = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setIsInitiativesLoading(false);
+            setInitiativesError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         setIsInitiativesLoading(true);
         setInitiativesError(null);
 
@@ -187,9 +221,15 @@ export function useHomeWorkspace() {
         } finally {
             setIsInitiativesLoading(false);
         }
-    }, []);
+    }, [hasDesktopBridge]);
 
     const loadDecisionMatrixForInitiative = useCallback(async (initiativeId: string) => {
+        if (!hasDesktopBridge) {
+            setIsDecisionMatrixLoading(false);
+            setDecisionMatrixError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         setIsDecisionMatrixLoading(true);
         setDecisionMatrixError(null);
 
@@ -219,9 +259,15 @@ export function useHomeWorkspace() {
         } finally {
             setIsDecisionMatrixLoading(false);
         }
-    }, []);
+    }, [hasDesktopBridge]);
 
     const loadRoadmapForInitiative = useCallback(async (initiativeId: string) => {
+        if (!hasDesktopBridge) {
+            setIsRoadmapLoading(false);
+            setRoadmapError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         setIsRoadmapLoading(true);
         setRoadmapError(null);
 
@@ -250,9 +296,15 @@ export function useHomeWorkspace() {
         } finally {
             setIsRoadmapLoading(false);
         }
-    }, []);
+    }, [hasDesktopBridge]);
 
     const loadTemplates = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setIsTemplatesLoading(false);
+            setTemplatesError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         setIsTemplatesLoading(true);
         setTemplatesError(null);
 
@@ -269,18 +321,36 @@ export function useHomeWorkspace() {
         } finally {
             setIsTemplatesLoading(false);
         }
-    }, []);
+    }, [hasDesktopBridge]);
 
     useEffect(() => {
+        if (!hasDesktopBridge) {
+            setIsTemplatesLoading(false);
+            setIsInitiativesLoading(false);
+            setTemplatesError(DESKTOP_BRIDGE_ERROR);
+            setInitiativesError(DESKTOP_BRIDGE_ERROR);
+            setPreviewError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         void loadTemplates();
-    }, [loadTemplates]);
+    }, [hasDesktopBridge, loadTemplates]);
 
     useEffect(() => {
+        if (!hasDesktopBridge) {
+            return;
+        }
+
         void loadInitiativeList();
-    }, [loadInitiativeList]);
+    }, [hasDesktopBridge, loadInitiativeList]);
 
     const openInitiative = useCallback(
         async (initiativeId: string) => {
+            if (!hasDesktopBridge) {
+                setPreviewError(DESKTOP_BRIDGE_ERROR);
+                return;
+            }
+
             setPreviewError(null);
 
             try {
@@ -293,16 +363,21 @@ export function useHomeWorkspace() {
                 setPreviewError(message);
             }
         },
-        [applyWorkspace, loadDecisionMatrixForInitiative, loadRoadmapForInitiative],
+        [applyWorkspace, hasDesktopBridge, loadDecisionMatrixForInitiative, loadRoadmapForInitiative],
     );
 
     useEffect(() => {
-        if (activeInitiativeId) {
+        if (hasDesktopBridge && activeInitiativeId) {
             void openInitiative(activeInitiativeId);
         }
-    }, [activeInitiativeId, openInitiative]);
+    }, [activeInitiativeId, hasDesktopBridge, openInitiative]);
 
     const runPreview = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setPreviewError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         setIsPreviewLoading(true);
         setPreviewError(null);
 
@@ -315,13 +390,13 @@ export function useHomeWorkspace() {
         } finally {
             setIsPreviewLoading(false);
         }
-    }, [assumptions]);
+    }, [assumptions, hasDesktopBridge]);
 
     useEffect(() => {
-        if (templates.length > 0) {
+        if (hasDesktopBridge && templates.length > 0) {
             void runPreview();
         }
-    }, [templates.length, runPreview]);
+    }, [hasDesktopBridge, templates.length, runPreview]);
 
     const statusText = useMemo(() => {
         if (initiativesError) {
@@ -330,6 +405,10 @@ export function useHomeWorkspace() {
 
         if (isTemplatesLoading) {
             return 'Loading built-in templates from local SQLite...';
+        }
+
+        if (!hasDesktopBridge) {
+            return DESKTOP_BRIDGE_ERROR;
         }
 
         if (templatesError) {
@@ -352,6 +431,7 @@ export function useHomeWorkspace() {
         isTemplatesLoading,
         templates.length,
         templatesError,
+        hasDesktopBridge,
     ]);
 
     const selectedTemplate = useMemo(
@@ -359,25 +439,66 @@ export function useHomeWorkspace() {
         [selectedTemplateSlug, templates],
     );
 
-    const setAssumption = useCallback((field: AssumptionField, value: string) => {
-        const parsed = parseNumericInput(value);
+    const setBusinessCaseMeta = useCallback(
+        (field: 'baselineAnnualCost' | 'horizonYears', value: string) => {
+            const parsed = parseNumericInput(value);
 
-        setAssumptions((previous) => {
-            if (field === 'horizonYears') {
+            setAssumptions((previous) => {
+                if (field === 'horizonYears') {
+                    return {
+                        ...previous,
+                        [field]: Math.max(1, Math.trunc(parsed || 1)),
+                    };
+                }
+
                 return {
                     ...previous,
-                    [field]: Math.max(1, Math.trunc(parsed || 1)),
+                    [field]: Math.max(0, parsed),
                 };
-            }
+            });
+        },
+        [],
+    );
 
-            return {
-                ...previous,
-                [field]: Math.max(0, parsed),
-            };
-        });
-    }, []);
+    const setWorksheetLineValue = useCallback(
+        (
+            section: WorksheetSectionId,
+            index: number,
+            field: 'oneTime' | 'annual',
+            value: string,
+        ) => {
+            const parsed = Math.max(0, parseNumericInput(value));
+
+            setAssumptions((previous) => {
+                const sectionKey = WORKSHEET_SECTION_ROWS_KEY[section];
+                const rows = [...previous.worksheet[sectionKey]];
+                if (!rows[index]) {
+                    return previous;
+                }
+
+                rows[index] = {
+                    ...rows[index],
+                    [field]: parsed,
+                };
+
+                return {
+                    ...previous,
+                    worksheet: {
+                        ...previous.worksheet,
+                        [sectionKey]: rows,
+                    },
+                };
+            });
+        },
+        [],
+    );
 
     const startDraft = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setPreviewError(DESKTOP_BRIDGE_ERROR);
+            return;
+        }
+
         setIsTemplateLibraryOpen(false);
         setPreviewError(null);
 
@@ -395,13 +516,18 @@ export function useHomeWorkspace() {
             const message = error instanceof Error ? error.message : 'Failed to create initiative.';
             setPreviewError(message);
         }
-    }, [applyWorkspace, selectedTemplateSlug]);
+    }, [applyWorkspace, hasDesktopBridge, selectedTemplateSlug]);
 
     const openTemplateLibrary = useCallback(() => {
         setIsTemplateLibraryOpen(true);
     }, []);
 
     const persistBusinessCase = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setPreviewError(DESKTOP_BRIDGE_ERROR);
+            return false;
+        }
+
         if (!activeInitiativeId) {
             setPreviewError('Start a business case first to save assumptions.');
             return false;
@@ -411,7 +537,7 @@ export function useHomeWorkspace() {
         setPreviewError(null);
 
         try {
-            const workspace = await saveBusinessCase(activeInitiativeId, assumptions as BusinessCasePreviewInput);
+            const workspace = await saveBusinessCase(activeInitiativeId, assumptions);
             applyWorkspace(workspace);
             return true;
         } catch (error) {
@@ -421,7 +547,7 @@ export function useHomeWorkspace() {
         } finally {
             setIsSaving(false);
         }
-    }, [activeInitiativeId, assumptions, applyWorkspace]);
+    }, [activeInitiativeId, assumptions, applyWorkspace, hasDesktopBridge]);
 
     const setDecisionOption = useCallback(
         (index: number, field: keyof DecisionMatrixEditableOption, value: string | number) => {
@@ -467,6 +593,11 @@ export function useHomeWorkspace() {
     }, []);
 
     const persistDecisionMatrix = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setDecisionMatrixError(DESKTOP_BRIDGE_ERROR);
+            return false;
+        }
+
         if (!activeInitiativeId) {
             setDecisionMatrixError('Select an initiative before saving decision matrix options.');
             return false;
@@ -515,7 +646,7 @@ export function useHomeWorkspace() {
         } finally {
             setIsDecisionMatrixSaving(false);
         }
-    }, [activeInitiativeId, decisionOptions]);
+    }, [activeInitiativeId, decisionOptions, hasDesktopBridge]);
 
     const setRoadmapPhase = useCallback(
         (index: number, field: keyof RoadmapEditablePhase, value: string) => {
@@ -553,6 +684,11 @@ export function useHomeWorkspace() {
     }, []);
 
     const persistRoadmap = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setRoadmapError(DESKTOP_BRIDGE_ERROR);
+            return false;
+        }
+
         if (!activeInitiativeId) {
             setRoadmapError('Select an initiative before saving roadmap phases.');
             return false;
@@ -599,7 +735,32 @@ export function useHomeWorkspace() {
         } finally {
             setIsRoadmapSaving(false);
         }
-    }, [activeInitiativeId, roadmapPhases]);
+    }, [activeInitiativeId, roadmapPhases, hasDesktopBridge]);
+
+    const exportMarkdown = useCallback(async () => {
+        if (!hasDesktopBridge) {
+            setMarkdownExportError(DESKTOP_BRIDGE_ERROR);
+            return null;
+        }
+
+        if (!activeInitiativeId) {
+            setMarkdownExportError('Select an initiative before exporting markdown.');
+            return null;
+        }
+
+        setIsMarkdownExporting(true);
+        setMarkdownExportError(null);
+
+        try {
+            return await exportInitiativeMarkdown(activeInitiativeId);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to export markdown.';
+            setMarkdownExportError(message);
+            return null;
+        } finally {
+            setIsMarkdownExporting(false);
+        }
+    }, [activeInitiativeId, hasDesktopBridge]);
 
     return {
         addDecisionOption,
@@ -613,12 +774,15 @@ export function useHomeWorkspace() {
         isDecisionMatrixLoading,
         isDecisionMatrixSaving,
         isInitiativesLoading,
+        hasDesktopBridge,
         isPreviewLoading,
         isRoadmapLoading,
         isRoadmapSaving,
+        isMarkdownExporting,
         isSaving,
         isTemplateLibraryOpen,
         isTemplatesLoading,
+        markdownExportError,
         preview,
         previewError,
         selectedTemplate,
@@ -630,6 +794,7 @@ export function useHomeWorkspace() {
         persistDecisionMatrix,
         persistBusinessCase,
         persistRoadmap,
+        exportMarkdown,
         roadmapError,
         roadmapPhases,
         removeDecisionOption,
@@ -641,7 +806,8 @@ export function useHomeWorkspace() {
         runPreview,
         setDecisionOption,
         setRoadmapPhase,
-        setAssumption,
+        setBusinessCaseMeta,
+        setWorksheetLineValue,
         setSelectedTemplateSlug,
     };
 }

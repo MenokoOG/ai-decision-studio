@@ -3,10 +3,14 @@
 ## Foundation
 
 - [x] Install workspace dependencies
-- [x] Wire Electron + Next dev flow
+- [x] Wire Electron + Next dev flow (legacy path)
 - [x] Add Tailwind and design tokens
 - [x] Add shadcn/ui foundation
 - [x] Add lint, format, typecheck, test scripts
+- [x] Scaffold web runtime under `apps/web`
+- [x] Scaffold dedicated backend runtime under `apps/api` (Express + middleware + layered modules)
+- [x] Add deterministic business-case preview API route in web app
+- [ ] Build complete web initiative workspace (business case, matrix, roadmap)
 
 ## Data
 
@@ -14,6 +18,7 @@
 - [x] Create initial migration
 - [x] Add seed template library
 - [x] Add audit tables
+- [ ] Migrate persistence target from SQLite assumptions to Postgres-ready web model
 
 ## Domain
 
@@ -21,7 +26,7 @@
 - [x] Implement business case service
 - [x] Implement decision matrix service
 - [x] Implement roadmap service
-- [ ] Implement export service
+- [x] Implement export service
 
 ## AI
 
@@ -37,7 +42,7 @@
 - [x] Initiative workspace
 - [x] Business case editor
 - [x] Decision matrix editor
-- [ ] Roadmap planner
+- [x] Roadmap planner
 - [ ] Settings screen
 
 ## Current Progress Notes
@@ -51,17 +56,26 @@
 - [x] Business Case tab remains fully functional with deterministic calculation and save/reload flow.
 - [x] Tabs now include guided step navigation so users can progress through the workflow as they complete fields.
 - [x] Decision Matrix tab now supports editable options with deterministic weighted scoring and SQLite-backed save/load.
-- [ ] Roadmap tab full editor wiring pending in current renderer page; roadmap service + IPC are implemented and ready.
+- [x] Roadmap tab now uses persisted editable roadmap phases end-to-end in renderer (`roadmapPhases`, `setRoadmapPhase`, `addRoadmapPhase`, `removeRoadmapPhase`, `persistRoadmap`) with guided save/continue workflow.
+- [x] Markdown export is now implemented through typed IPC using persisted initiative, business case, decision matrix, and roadmap data.
+- [x] Business Case now uses worksheet-parity structure from original course workbook (sectioned Cost, Benefit, Risk Mitigation rows with one-time and annual inputs).
+- [x] Deterministic calculator now projects year-by-year section totals, net yearly values, and running net totals from worksheet rows.
+- [x] Business Case renderer was redesigned for professional worksheet UX with mobile-friendly section cards and clearer save/continue actions.
+- [x] New web runtime scaffolding was created (`apps/web`) with shared UI primitives and typed utilities.
+- [x] Web route `POST /api/business-case/preview` now validates input with zod and calls deterministic shared calculator logic.
+- [x] Initial web page (`apps/web/src/app/page.tsx`) now supports worksheet editing and API-backed deterministic preview.
+- [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
+- [ ] Add provider settings and auditable AI actions through server-side app service layer.
 
 ## Export
 
-- [ ] Markdown export
+- [x] Markdown export
 - [ ] Excel export
 - [ ] PDF export stub
 
 ## Security
 
-- [ ] Harden BrowserWindow
+- [ ] Add CSP for web runtime
+- [ ] Add request validation coverage for all write endpoints
 - [ ] Add secure key storage plan
-- [ ] Add CSP
-- [ ] Add IPC validation
+- [ ] Add route-level rate limiting and payload guards

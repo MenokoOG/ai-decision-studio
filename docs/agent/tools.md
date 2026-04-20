@@ -3,6 +3,8 @@
 ## Expected Commands
 - pnpm install
 - pnpm dev
+- pnpm dev:web
+- pnpm dev:desktop
 - pnpm build
 - pnpm lint
 - pnpm typecheck

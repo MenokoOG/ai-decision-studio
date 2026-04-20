@@ -29,6 +29,8 @@ const bridge: AiDecisionStudioBridge = {
   getRoadmap: (initiativeId: string) => ipcRenderer.invoke(IPC_CHANNELS.getRoadmap, initiativeId),
   saveRoadmap: (initiativeId: string, phases: RoadmapPhaseInput[]) =>
     ipcRenderer.invoke(IPC_CHANNELS.saveRoadmap, initiativeId, phases),
+  exportInitiativeMarkdown: (initiativeId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.exportInitiativeMarkdown, initiativeId),
 };
 
 contextBridge.exposeInMainWorld('aiDecisionStudio', bridge);

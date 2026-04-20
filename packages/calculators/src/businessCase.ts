@@ -3,15 +3,43 @@ export interface LineItem {
   annual: number;
 }
 
+export interface WorksheetLineItem extends LineItem {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export interface BusinessCaseWorksheetInput {
+  costRows: WorksheetLineItem[];
+  benefitRows: WorksheetLineItem[];
+  mitigationRows: WorksheetLineItem[];
+}
+
 export interface BusinessCaseInput {
   baselineAnnualCost: number;
-  expectedAnnualCostReduction: number;
-  implementationCosts: LineItem[];
   horizonYears: number;
+  worksheet: BusinessCaseWorksheetInput;
+}
+
+export type ProjectionSectionId = 'cost' | 'benefit' | 'mitigation';
+
+export interface BusinessCaseProjectionRow extends WorksheetLineItem {
+  yearlyValues: number[];
+  total: number;
+}
+
+export interface BusinessCaseSectionProjection {
+  id: ProjectionSectionId;
+  label: string;
+  rows: BusinessCaseProjectionRow[];
+  yearlyTotals: number[];
+  total: number;
 }
 
 export interface BusinessCaseSummary {
   horizonYears: number;
+  yearLabels: string[];
+  sections: BusinessCaseSectionProjection[];
   totalOneTimeCost: number;
   totalAnnualRunCost: number;
   annualSavings: number;
@@ -19,6 +47,8 @@ export interface BusinessCaseSummary {
   totalCostOfOwnership: number;
   totalBenefit: number;
   netValue: number;
+  netYearTotals: number[];
+  runningNetTotals: number[];
   roiPercent: number | null;
   paybackMonths: number | null;
 }
@@ -33,10 +63,10 @@ function normalizeCurrency(value: number) {
 
 function normalizeHorizon(years: number) {
   if (!Number.isFinite(years)) {
-    return 1;
+    return 5;
   }
 
-  return Math.max(1, Math.trunc(years));
+  return Math.max(1, Math.min(10, Math.trunc(years)));
 }
 
 export function sumLines(lines: LineItem[]) {
@@ -55,20 +85,96 @@ export function fiveYearTotal(lines: LineItem[]) {
   return totals.oneTime + totals.annual * 5;
 }
 
+function projectRow(line: WorksheetLineItem, horizonYears: number): BusinessCaseProjectionRow {
+  const yearlyValues = Array.from({ length: horizonYears }, (_unused, index) => {
+    if (index === 0) {
+      return normalizeCurrency(line.oneTime);
+    }
+
+    return normalizeCurrency(line.annual);
+  });
+
+  return {
+    key: line.key,
+    label: line.label,
+    description: line.description,
+    oneTime: normalizeCurrency(line.oneTime),
+    annual: normalizeCurrency(line.annual),
+    yearlyValues,
+    total: normalizeCurrency(yearlyValues.reduce((sum, value) => sum + value, 0)),
+  };
+}
+
+function projectSection(
+  id: ProjectionSectionId,
+  label: string,
+  rows: WorksheetLineItem[],
+  horizonYears: number,
+): BusinessCaseSectionProjection {
+  const projectedRows = rows.map((row) => projectRow(row, horizonYears));
+
+  const yearlyTotals = Array.from({ length: horizonYears }, (_unused, yearIndex) =>
+    normalizeCurrency(
+      projectedRows.reduce((sum, row) => sum + (row.yearlyValues[yearIndex] ?? 0), 0),
+    ),
+  );
+
+  return {
+    id,
+    label,
+    rows: projectedRows,
+    yearlyTotals,
+    total: normalizeCurrency(yearlyTotals.reduce((sum, value) => sum + value, 0)),
+  };
+}
+
 export function evaluateBusinessCase(input: BusinessCaseInput): BusinessCaseSummary {
   const horizonYears = normalizeHorizon(input.horizonYears);
-  const totals = sumLines(input.implementationCosts);
 
-  const totalOneTimeCost = normalizeCurrency(totals.oneTime);
-  const totalAnnualRunCost = normalizeCurrency(totals.annual);
-  const annualSavings = normalizeCurrency(
-    Math.min(input.baselineAnnualCost, input.expectedAnnualCostReduction),
+  const costSection = projectSection('cost', 'Costs', input.worksheet.costRows, horizonYears);
+  const benefitSection = projectSection(
+    'benefit',
+    'Benefits',
+    input.worksheet.benefitRows,
+    horizonYears,
   );
+  const mitigationSection = projectSection(
+    'mitigation',
+    'Risk Mitigations',
+    input.worksheet.mitigationRows,
+    horizonYears,
+  );
+
+  const sections = [costSection, benefitSection, mitigationSection];
+
+  const totalOneTimeCost = normalizeCurrency(
+    costSection.yearlyTotals[0] + mitigationSection.yearlyTotals[0],
+  );
+  const totalAnnualRunCost = normalizeCurrency(
+    sumLines([...input.worksheet.costRows, ...input.worksheet.mitigationRows]).annual,
+  );
+  const annualSavings = normalizeCurrency(sumLines(input.worksheet.benefitRows).annual);
+
+  const totalCostOfOwnership = normalizeCurrency(costSection.total + mitigationSection.total);
+  const totalBenefit = normalizeCurrency(benefitSection.total);
+  const netValue = normalizeCurrency(totalBenefit - totalCostOfOwnership);
   const netAnnualBenefit = normalizeCurrency(annualSavings - totalAnnualRunCost);
 
-  const totalCostOfOwnership = normalizeCurrency(totalOneTimeCost + totalAnnualRunCost * horizonYears);
-  const totalBenefit = normalizeCurrency(annualSavings * horizonYears);
-  const netValue = normalizeCurrency(totalBenefit - totalCostOfOwnership);
+  const netYearTotals = Array.from({ length: horizonYears }, (_unused, index) =>
+    normalizeCurrency(
+      (benefitSection.yearlyTotals[index] ?? 0) -
+        (costSection.yearlyTotals[index] ?? 0) -
+        (mitigationSection.yearlyTotals[index] ?? 0),
+    ),
+  );
+
+  const runningNetTotals: number[] = [];
+  for (const yearlyNet of netYearTotals) {
+    const previous = runningNetTotals[runningNetTotals.length - 1] ?? 0;
+    runningNetTotals.push(normalizeCurrency(previous + yearlyNet));
+  }
+
+  const yearLabels = Array.from({ length: horizonYears }, (_unused, index) => `Year ${index + 1}`);
 
   const roiPercent =
     totalCostOfOwnership > 0 ? normalizeCurrency((netValue / totalCostOfOwnership) * 100) : null;
@@ -78,6 +184,8 @@ export function evaluateBusinessCase(input: BusinessCaseInput): BusinessCaseSumm
 
   return {
     horizonYears,
+    yearLabels,
+    sections,
     totalOneTimeCost,
     totalAnnualRunCost,
     annualSavings,
@@ -85,6 +193,8 @@ export function evaluateBusinessCase(input: BusinessCaseInput): BusinessCaseSumm
     totalCostOfOwnership,
     totalBenefit,
     netValue,
+    netYearTotals,
+    runningNetTotals,
     roiPercent,
     paybackMonths,
   };

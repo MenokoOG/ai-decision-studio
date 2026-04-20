@@ -1,26 +1,25 @@
 # DECISIONS
 
-- Use Electron for desktop-first local workflows.
-- Use Next.js renderer for fast UI and future web portability.
+- Use web-first architecture with `apps/web` as the primary product runtime.
+- Keep `apps/desktop` in maintenance mode while migration completes.
+- Use Next.js route handlers/server actions as the initial BFF layer.
 - Do not use Nest in v1.
-- Use SQLite + Prisma for local persistence.
-- Keep app usable offline except AI calls.
+- Use Postgres + Prisma for web persistence target.
+- Keep resilient local draft UX where practical, but prioritize online-first workflows.
 - Prioritize clean exports slightly over imports.
 - Use OpenAI-compatible provider abstraction from day one.
 - No auth in v1.
 - Include a built-in template library in v1.
 - Use Turbo monorepo task orchestration with explicit `format` pipeline support.
 - Use `tsup` to compile Electron main/preload TypeScript to CJS artifacts under `apps/desktop/dist`.
-- Keep Electron security invariants in main process (`contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`).
-- Use static Next export for desktop renderer production artifacts and load via Electron `loadFile`.
+- Keep all client writes and AI operations behind typed server/API service boundaries.
 - Add shadcn/ui-compatible foundation (`button`, `card`, `cn` utility) with Tailwind CSS variable tokens.
 - Standardize formatting with Prettier and ignore generated renderer build output under `src/renderer/.next`.
 - Extend persistence model with roadmap phases, template library records, AI run audit history, and explicit financial lock confirmations.
 - Keep cost and benefit lock state in deterministic line records (`isLocked`, `lockReason`) so AI changes can be guarded at service boundaries.
 - Seed a compact built-in template library via Prisma seed script to ensure deterministic offline bootstrap.
 - Use SQLite local database with initial migration committed from Prisma schema as source of truth.
-- Add explicit typed IPC contracts in `apps/desktop/src/shared/ipc.ts` and expose only minimal preload methods for renderer-safe data access.
-- Keep template retrieval in Electron main process through Prisma, and consume it in renderer via hook/service rather than hardcoded template arrays.
+- Keep template retrieval and initiative persistence in the server layer with typed request/response contracts.
 - Route business-case preview calculations through deterministic calculator functions and return only computed outputs to renderer.
 - Persist initiatives as first-class records created from template selections, with lightweight `initiative.created` audit payload linking template origin.
 - Persist business-case inputs by writing deterministic cost/benefit lines and storing non-line assumptions (`baselineAnnualCost`, `horizonYears`) in auditable `business-case.saved` events.
@@ -30,3 +29,8 @@
 - Persist decision matrix options per initiative in the `Decision` table and recompute `totalScore` server-side using fixed weighted scoring rules.
 - Treat decision scoring as deterministic domain logic in the main/service layer, with renderer editing as input only.
 - Persist roadmap phases per initiative in `RoadmapPhase` with explicit ordering and normalized date fields, and rehydrate roadmap state from DB on initiative open.
+- Complete roadmap editor wiring in renderer using hook-owned roadmap state/actions (`roadmapPhases`, `setRoadmapPhase`, `addRoadmapPhase`, `removeRoadmapPhase`, `persistRoadmap`) to preserve UI/domain separation.
+- Implement Markdown export as a typed IPC flow (`export:initiative-markdown`) generated in main process from persisted initiative workspace + decision matrix + roadmap and rendered by `packages/exporters` for clean deterministic output.
+- Represent Business Case assumptions as worksheet-parity sectioned rows (`costRows`, `benefitRows`, `mitigationRows`) instead of single aggregate implementation/savings fields.
+- Keep yearly projection logic deterministic in `packages/calculators` with Year 1 as one-time and Year 2+ as annual values for each row, then derive section totals, net yearly totals, and running cumulative totals.
+- Persist worksheet rows through typed web APIs using explicit categories (`COST`, `BENEFIT`, `MITIGATION`) while preserving backward compatibility with legacy categories (`IMPLEMENTATION`, `SAVINGS`) during migration.

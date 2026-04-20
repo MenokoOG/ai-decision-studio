@@ -5,6 +5,7 @@ import type {
     DecisionMatrixOptionInput,
     DecisionMatrixWorkspace,
     InitiativeSummary,
+    MarkdownExportDocument,
     RoadmapPhaseInput,
     RoadmapWorkspace,
     TemplateSummary,
@@ -16,6 +17,10 @@ function getBridge() {
     }
 
     return window.aiDecisionStudio;
+}
+
+export function isDesktopBridgeAvailable() {
+    return typeof window !== 'undefined' && !!window.aiDecisionStudio;
 }
 
 export async function listTemplates() {
@@ -56,4 +61,8 @@ export async function getRoadmap(initiativeId: string) {
 
 export async function saveRoadmap(initiativeId: string, phases: RoadmapPhaseInput[]) {
     return getBridge().saveRoadmap(initiativeId, phases) as Promise<RoadmapWorkspace>;
+}
+
+export async function exportInitiativeMarkdown(initiativeId: string) {
+    return getBridge().exportInitiativeMarkdown(initiativeId) as Promise<MarkdownExportDocument>;
 }

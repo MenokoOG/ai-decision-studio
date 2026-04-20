@@ -4,36 +4,80 @@ import { z } from 'zod';
 
 import { evaluateBusinessCase } from '../../../../packages/calculators/src/businessCase';
 import { db } from '../../../../packages/db/src/client';
+import { buildInitiativeMarkdownExport } from '../../../../packages/exporters/src/markdown';
 import {
   IPC_CHANNELS,
   type BusinessCasePreviewInput,
   type BusinessCaseWorkspace,
+  type BusinessCaseWorksheetInput,
   type DecisionMatrixOptionInput,
   type DecisionMatrixWorkspace,
   type InitiativeSummary,
+  type MarkdownExportDocument,
   type RoadmapPhaseInput,
   type RoadmapWorkspace,
+  type WorksheetLineInput,
+  type WorksheetSectionId,
+  WORKSHEET_ROW_TEMPLATES,
 } from '../shared/ipc';
 
 const BUSINESS_CASE_SAVED_EVENT = 'business-case.saved';
 const INITIATIVE_CREATED_EVENT = 'initiative.created';
-const IMPLEMENTATION_CATEGORY = 'IMPLEMENTATION';
-const SAVINGS_CATEGORY = 'SAVINGS';
+const COST_CATEGORY = 'COST';
+const BENEFIT_CATEGORY = 'BENEFIT';
+const MITIGATION_CATEGORY = 'MITIGATION';
+const LEGACY_IMPLEMENTATION_CATEGORY = 'IMPLEMENTATION';
+const LEGACY_SAVINGS_CATEGORY = 'SAVINGS';
 const DECISION_OPTION_TYPE = 'delivery-option';
-const DEFAULT_ASSUMPTIONS: BusinessCasePreviewInput = {
-  baselineAnnualCost: 220000,
-  expectedAnnualCostReduction: 140000,
-  implementationOneTimeCost: 120000,
-  implementationAnnualCost: 30000,
-  horizonYears: 5,
-};
+
+function createWorksheetRows(section: WorksheetSectionId): WorksheetLineInput[] {
+  return WORKSHEET_ROW_TEMPLATES[section].map((template) => ({
+    key: template.key,
+    label: template.label,
+    description: template.description,
+    oneTime: 0,
+    annual: 0,
+  }));
+}
+
+function createDefaultAssumptions(): BusinessCasePreviewInput {
+  const worksheet: BusinessCaseWorksheetInput = {
+    costRows: createWorksheetRows('cost'),
+    benefitRows: createWorksheetRows('benefit'),
+    mitigationRows: createWorksheetRows('mitigation'),
+  };
+
+  worksheet.costRows[2].oneTime = 120000;
+  worksheet.costRows[2].annual = 30000;
+  worksheet.benefitRows[0].annual = 140000;
+
+  return {
+    baselineAnnualCost: 220000,
+    horizonYears: 5,
+    worksheet,
+  };
+}
+
+const DEFAULT_ASSUMPTIONS: BusinessCasePreviewInput = createDefaultAssumptions();
+
+const worksheetLineSchema = z.object({
+  key: z.string().trim().min(1),
+  label: z.string().trim().min(1).max(140),
+  description: z.string().max(500),
+  oneTime: z.number().min(0),
+  annual: z.number().min(0),
+});
+
+const businessCaseWorksheetSchema = z.object({
+  costRows: z.array(worksheetLineSchema).min(1).max(20),
+  benefitRows: z.array(worksheetLineSchema).min(1).max(20),
+  mitigationRows: z.array(worksheetLineSchema).min(1).max(20),
+});
 
 const businessCasePreviewSchema = z.object({
   baselineAnnualCost: z.number().min(0),
-  expectedAnnualCostReduction: z.number().min(0),
-  implementationOneTimeCost: z.number().min(0),
-  implementationAnnualCost: z.number().min(0),
   horizonYears: z.number().int().min(1).max(10),
+  worksheet: businessCaseWorksheetSchema,
 });
 
 const initiativeIdSchema = z.string().min(1);
@@ -97,9 +141,8 @@ function toInitiativeSummary(
 
 function getPersistedAssumptions(
   savedEventPayload: unknown,
-  implementationOneTimeCost: number,
-  implementationAnnualCost: number,
-  expectedAnnualCostReduction: number,
+  costLines: Array<{ category: string; oneTime: number; annual: number; sortOrder: number }>,
+  benefitLines: Array<{ category: string; oneTime: number; annual: number; sortOrder: number }>,
 ): BusinessCasePreviewInput {
   const payload =
     savedEventPayload && typeof savedEventPayload === 'object'
@@ -114,13 +157,108 @@ function getPersistedAssumptions(
   const horizonYears =
     typeof payload.horizonYears === 'number' ? Math.max(1, Math.trunc(payload.horizonYears)) : 5;
 
+  const costRows = createWorksheetRows('cost');
+  const benefitRows = createWorksheetRows('benefit');
+  const mitigationRows = createWorksheetRows('mitigation');
+
+  const persistedCostRows = costLines.filter((line) => line.category === COST_CATEGORY);
+  const persistedMitigationRows = costLines.filter((line) => line.category === MITIGATION_CATEGORY);
+  const persistedBenefitRows = benefitLines.filter((line) => line.category === BENEFIT_CATEGORY);
+
+  persistedCostRows.forEach((line) => {
+    if (line.sortOrder >= 0 && line.sortOrder < costRows.length) {
+      costRows[line.sortOrder].oneTime = line.oneTime;
+      costRows[line.sortOrder].annual = line.annual;
+    }
+  });
+
+  persistedMitigationRows.forEach((line) => {
+    if (line.sortOrder >= 0 && line.sortOrder < mitigationRows.length) {
+      mitigationRows[line.sortOrder].oneTime = line.oneTime;
+      mitigationRows[line.sortOrder].annual = line.annual;
+    }
+  });
+
+  persistedBenefitRows.forEach((line) => {
+    if (line.sortOrder >= 0 && line.sortOrder < benefitRows.length) {
+      benefitRows[line.sortOrder].oneTime = line.oneTime;
+      benefitRows[line.sortOrder].annual = line.annual;
+    }
+  });
+
+  const legacyImplementationLine = costLines.find((line) => line.category === LEGACY_IMPLEMENTATION_CATEGORY);
+  if (legacyImplementationLine && persistedCostRows.length === 0) {
+    costRows[2].oneTime = legacyImplementationLine.oneTime;
+    costRows[2].annual = legacyImplementationLine.annual;
+  }
+
+  const legacySavingsLine = benefitLines.find((line) => line.category === LEGACY_SAVINGS_CATEGORY);
+  if (legacySavingsLine && persistedBenefitRows.length === 0) {
+    benefitRows[0].oneTime = legacySavingsLine.oneTime;
+    benefitRows[0].annual = legacySavingsLine.annual;
+  }
+
   return {
     baselineAnnualCost,
-    expectedAnnualCostReduction,
-    implementationOneTimeCost,
-    implementationAnnualCost,
     horizonYears,
+    worksheet: {
+      costRows,
+      benefitRows,
+      mitigationRows,
+    },
   };
+}
+
+async function saveWorksheetLines(initiativeId: string, worksheet: BusinessCaseWorksheetInput) {
+  await db.costLine.deleteMany({
+    where: {
+      initiativeId,
+      category: {
+        in: [COST_CATEGORY, MITIGATION_CATEGORY, LEGACY_IMPLEMENTATION_CATEGORY],
+      },
+    },
+  });
+
+  await db.benefitLine.deleteMany({
+    where: {
+      initiativeId,
+      category: {
+        in: [BENEFIT_CATEGORY, LEGACY_SAVINGS_CATEGORY],
+      },
+    },
+  });
+
+  await db.costLine.createMany({
+    data: [
+      ...worksheet.costRows.map((row, index) => ({
+        initiativeId,
+        category: COST_CATEGORY,
+        oneTime: row.oneTime,
+        annual: row.annual,
+        notes: `${row.key} | ${row.label}`,
+        sortOrder: index,
+      })),
+      ...worksheet.mitigationRows.map((row, index) => ({
+        initiativeId,
+        category: MITIGATION_CATEGORY,
+        oneTime: row.oneTime,
+        annual: row.annual,
+        notes: `${row.key} | ${row.label}`,
+        sortOrder: index,
+      })),
+    ],
+  });
+
+  await db.benefitLine.createMany({
+    data: worksheet.benefitRows.map((row, index) => ({
+      initiativeId,
+      category: BENEFIT_CATEGORY,
+      oneTime: row.oneTime,
+      annual: row.annual,
+      notes: `${row.key} | ${row.label}`,
+      sortOrder: index,
+    })),
+  });
 }
 
 function normalizeScore(value: number) {
@@ -203,19 +341,15 @@ async function buildWorkspace(initiativeId: string): Promise<BusinessCaseWorkspa
   });
 
   const implementationCostLines = initiative.costLines.filter(
-    (line) => line.category === IMPLEMENTATION_CATEGORY,
+    (line) =>
+      line.category === COST_CATEGORY ||
+      line.category === MITIGATION_CATEGORY ||
+      line.category === LEGACY_IMPLEMENTATION_CATEGORY,
   );
 
-  const savingsLines = initiative.benefitLines.filter((line) => line.category === SAVINGS_CATEGORY);
-
-  const implementationOneTimeCost = implementationCostLines.reduce(
-    (sum, line) => sum + line.oneTime,
-    0,
+  const benefitLines = initiative.benefitLines.filter(
+    (line) => line.category === BENEFIT_CATEGORY || line.category === LEGACY_SAVINGS_CATEGORY,
   );
-
-  const implementationAnnualCost = implementationCostLines.reduce((sum, line) => sum + line.annual, 0);
-
-  const expectedAnnualCostReduction = savingsLines.reduce((sum, line) => sum + line.annual, 0);
 
   const latestSavedEvent = initiative.auditEvents.find(
     (event) => event.eventType === BUSINESS_CASE_SAVED_EVENT,
@@ -223,9 +357,8 @@ async function buildWorkspace(initiativeId: string): Promise<BusinessCaseWorkspa
 
   const assumptions = getPersistedAssumptions(
     latestSavedEvent?.payload,
-    implementationOneTimeCost,
-    implementationAnnualCost,
-    expectedAnnualCostReduction,
+    implementationCostLines,
+    benefitLines,
   );
 
   return {
@@ -241,14 +374,8 @@ async function buildWorkspace(initiativeId: string): Promise<BusinessCaseWorkspa
     assumptions,
     preview: evaluateBusinessCase({
       baselineAnnualCost: assumptions.baselineAnnualCost,
-      expectedAnnualCostReduction: assumptions.expectedAnnualCostReduction,
-      implementationCosts: [
-        {
-          oneTime: assumptions.implementationOneTimeCost,
-          annual: assumptions.implementationAnnualCost,
-        },
-      ],
       horizonYears: assumptions.horizonYears,
+      worksheet: assumptions.worksheet,
     }),
   };
 }
@@ -275,14 +402,8 @@ function registerIpcHandlers() {
 
     return evaluateBusinessCase({
       baselineAnnualCost: parsed.baselineAnnualCost,
-      expectedAnnualCostReduction: parsed.expectedAnnualCostReduction,
-      implementationCosts: [
-        {
-          oneTime: parsed.implementationOneTimeCost,
-          annual: parsed.implementationAnnualCost,
-        },
-      ],
       horizonYears: parsed.horizonYears,
+      worksheet: parsed.worksheet,
     });
   });
 
@@ -310,27 +431,7 @@ function registerIpcHandlers() {
       },
     });
 
-    await db.costLine.create({
-      data: {
-        initiativeId: initiative.id,
-        category: IMPLEMENTATION_CATEGORY,
-        oneTime: DEFAULT_ASSUMPTIONS.implementationOneTimeCost,
-        annual: DEFAULT_ASSUMPTIONS.implementationAnnualCost,
-        notes: 'Template default implementation costs',
-        sortOrder: 0,
-      },
-    });
-
-    await db.benefitLine.create({
-      data: {
-        initiativeId: initiative.id,
-        category: SAVINGS_CATEGORY,
-        oneTime: 0,
-        annual: DEFAULT_ASSUMPTIONS.expectedAnnualCostReduction,
-        notes: 'Template default annual savings',
-        sortOrder: 0,
-      },
-    });
+    await saveWorksheetLines(initiative.id, DEFAULT_ASSUMPTIONS.worksheet);
 
     await db.auditEvent.create({
       data: {
@@ -377,62 +478,7 @@ function registerIpcHandlers() {
 
       const initiative = await db.initiative.findUniqueOrThrow({ where: { id: parsedId } });
 
-      const implementationLine = await db.costLine.findFirst({
-        where: {
-          initiativeId: initiative.id,
-          category: IMPLEMENTATION_CATEGORY,
-        },
-        orderBy: { sortOrder: 'asc' },
-      });
-
-      if (implementationLine) {
-        await db.costLine.update({
-          where: { id: implementationLine.id },
-          data: {
-            oneTime: parsed.implementationOneTimeCost,
-            annual: parsed.implementationAnnualCost,
-          },
-        });
-      } else {
-        await db.costLine.create({
-          data: {
-            initiativeId: initiative.id,
-            category: IMPLEMENTATION_CATEGORY,
-            oneTime: parsed.implementationOneTimeCost,
-            annual: parsed.implementationAnnualCost,
-            notes: 'Saved implementation costs',
-            sortOrder: 0,
-          },
-        });
-      }
-
-      const savingsLine = await db.benefitLine.findFirst({
-        where: {
-          initiativeId: initiative.id,
-          category: SAVINGS_CATEGORY,
-        },
-        orderBy: { sortOrder: 'asc' },
-      });
-
-      if (savingsLine) {
-        await db.benefitLine.update({
-          where: { id: savingsLine.id },
-          data: {
-            annual: parsed.expectedAnnualCostReduction,
-          },
-        });
-      } else {
-        await db.benefitLine.create({
-          data: {
-            initiativeId: initiative.id,
-            category: SAVINGS_CATEGORY,
-            oneTime: 0,
-            annual: parsed.expectedAnnualCostReduction,
-            notes: 'Saved annual cost reduction',
-            sortOrder: 0,
-          },
-        });
-      }
+      await saveWorksheetLines(initiative.id, parsed.worksheet);
 
       await db.auditEvent.create({
         data: {
@@ -535,6 +581,24 @@ function registerIpcHandlers() {
       }
 
       return buildRoadmapWorkspace(parsedId);
+    },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.exportInitiativeMarkdown,
+    async (_event, initiativeId: string): Promise<MarkdownExportDocument> => {
+      const parsedId = initiativeIdSchema.parse(initiativeId);
+      const workspace = await buildWorkspace(parsedId);
+      const decisionMatrix = await buildDecisionMatrixWorkspace(parsedId);
+      const roadmap = await buildRoadmapWorkspace(parsedId);
+
+      return buildInitiativeMarkdownExport({
+        initiative: workspace.initiative,
+        assumptions: workspace.assumptions,
+        preview: workspace.preview,
+        decisionMatrix,
+        roadmap,
+      });
     },
   );
 }

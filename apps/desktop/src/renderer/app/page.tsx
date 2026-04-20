@@ -50,6 +50,20 @@ function asMonths(value: number | null) {
   return `${value.toFixed(1)} months`;
 }
 
+function downloadTextFile(fileName: string, content: string) {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+
+  URL.revokeObjectURL(objectUrl);
+}
+
 export default function Page() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('business-case');
 
@@ -63,6 +77,8 @@ export default function Page() {
     initiatives,
     isDecisionMatrixLoading,
     isDecisionMatrixSaving,
+    isMarkdownExporting,
+    hasDesktopBridge,
     initiativesError,
     isInitiativesLoading,
     isPreviewLoading,
@@ -90,11 +106,14 @@ export default function Page() {
     runPreview,
     setDecisionOption,
     setRoadmapPhase,
-    setAssumption,
+    setBusinessCaseMeta,
+    setWorksheetLineValue,
     setSelectedTemplateSlug,
     roadmapError,
     roadmapPhases,
     removeRoadmapPhase,
+    markdownExportError,
+    exportMarkdown,
   } = useHomeWorkspace();
 
   const activeInitiative = useMemo(
@@ -142,8 +161,53 @@ export default function Page() {
     }
   };
 
+  const handleExportMarkdown = async () => {
+    const document = await exportMarkdown();
+
+    if (!document) {
+      return;
+    }
+
+    downloadTextFile(document.fileName, document.content);
+  };
+
+  const businessCaseSections = [
+    {
+      id: 'cost' as const,
+      title: 'Costs',
+      description: 'One-time and recurring implementation costs.',
+      rows: assumptions.worksheet.costRows,
+      section: preview?.sections.find((item) => item.id === 'cost') ?? null,
+    },
+    {
+      id: 'benefit' as const,
+      title: 'Benefits',
+      description: 'Savings and value unlocked by the initiative.',
+      rows: assumptions.worksheet.benefitRows,
+      section: preview?.sections.find((item) => item.id === 'benefit') ?? null,
+    },
+    {
+      id: 'mitigation' as const,
+      title: 'Risk Mitigations',
+      description: 'Risk-control investments tied to delivery and governance.',
+      rows: assumptions.worksheet.mitigationRows,
+      section: preview?.sections.find((item) => item.id === 'mitigation') ?? null,
+    },
+  ];
+
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {!hasDesktopBridge ? (
+        <section className="mb-6 rounded-2xl border border-amber-300/35 bg-amber-500/10 p-4 text-amber-100">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em]">Desktop Runtime Required</p>
+          <p className="mt-2 text-sm">
+            This page is running without the Electron preload bridge, so data loading and calculations are disabled.
+            Start the desktop app with <span className="font-semibold">pnpm dev</span> from repo root and use the
+            Electron window, not the browser tab.
+          </p>
+        </section>
+      ) : null}
+
       <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur sm:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -165,19 +229,28 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button className="gap-2" onClick={startDraft}>
+          <Button className="gap-2" onClick={startDraft} disabled={!hasDesktopBridge}>
             <Sparkles className="size-4" />
             {activeInitiativeId ? 'Create Another Initiative' : 'Start Business Case'}
           </Button>
-          <Button variant="outline" onClick={openTemplateLibrary}>
+          <Button variant="outline" onClick={openTemplateLibrary} disabled={!hasDesktopBridge}>
             Open Template Library
           </Button>
-          <Button variant="ghost" onClick={loadTemplates}>
+          <Button variant="ghost" onClick={loadTemplates} disabled={!hasDesktopBridge}>
             Refresh Templates
           </Button>
-          <Button variant="ghost" onClick={loadInitiativeList}>
+          <Button variant="ghost" onClick={loadInitiativeList} disabled={!hasDesktopBridge}>
             Refresh Initiatives
           </Button>
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+              hasDesktopBridge
+                ? 'border-emerald-300/40 bg-emerald-500/10 text-emerald-100'
+                : 'border-amber-300/35 bg-amber-500/10 text-amber-100'
+            }`}
+          >
+            {hasDesktopBridge ? 'Desktop bridge connected' : 'Desktop bridge disconnected'}
+          </span>
         </div>
         <p className="mt-4 text-sm text-brand-100/90">{statusText}</p>
       </section>
@@ -228,7 +301,7 @@ export default function Page() {
                 key={tab.id}
                 variant={activeTab === tab.id ? 'secondary' : 'outline'}
                 onClick={() => goToTab(tab.id)}
-                disabled={disabled}
+                disabled={disabled || !hasDesktopBridge}
               >
                 {index + 1}. {tab.title}
               </Button>
@@ -242,115 +315,172 @@ export default function Page() {
       </section>
 
       {activeTab === 'business-case' ? (
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <h2 className="text-lg font-semibold">Business Case Assumptions</h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Enter assumptions to produce deterministic cost, value, ROI, and payback outputs.
-            </p>
+        <section className="mt-6 space-y-4">
+          <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/80 via-slate-900/60 to-brand-900/25 p-5 sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Worksheet-Parity Business Case</h2>
+                <p className="mt-1 text-sm text-slate-300">
+                  Mirrors your course worksheet structure with deterministic year-by-year outputs.
+                </p>
+              </div>
+              <span className="rounded-full border border-brand-500/40 bg-brand-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand-100">
+                Professional mode
+              </span>
+            </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm text-slate-200">
                 Baseline annual cost
                 <input
-                  className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
+                  className="rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.baselineAnnualCost}
-                  onChange={(event) => setAssumption('baselineAnnualCost', event.target.value)}
+                  onChange={(event) => setBusinessCaseMeta('baselineAnnualCost', event.target.value)}
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-200">
-                Expected annual cost reduction
-                <input
-                  className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
-                  inputMode="decimal"
-                  value={assumptions.expectedAnnualCostReduction}
-                  onChange={(event) =>
-                    setAssumption('expectedAnnualCostReduction', event.target.value)
-                  }
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
-                Implementation one-time cost
-                <input
-                  className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
-                  inputMode="decimal"
-                  value={assumptions.implementationOneTimeCost}
-                  onChange={(event) =>
-                    setAssumption('implementationOneTimeCost', event.target.value)
-                  }
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
-                Implementation annual run cost
-                <input
-                  className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
-                  inputMode="decimal"
-                  value={assumptions.implementationAnnualCost}
-                  onChange={(event) =>
-                    setAssumption('implementationAnnualCost', event.target.value)
-                  }
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2">
                 Horizon years
                 <input
-                  className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
+                  className="rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2 text-sm"
                   inputMode="numeric"
                   value={assumptions.horizonYears}
-                  onChange={(event) => setAssumption('horizonYears', event.target.value)}
+                  onChange={(event) => setBusinessCaseMeta('horizonYears', event.target.value)}
                 />
               </label>
-            </div>
-
-            <div className="mt-4 flex items-center gap-3">
-              <Button onClick={runPreview} disabled={isPreviewLoading || isTemplatesLoading}>
-                {isPreviewLoading ? 'Calculating...' : 'Calculate Business Case'}
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={persistBusinessCase}
-                disabled={!activeInitiativeId || isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Business Case'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={saveAndContinueToDecisionMatrix}
-                disabled={!activeInitiativeId || isSaving}
-              >
-                Save and Continue
-              </Button>
-              {previewError ? <p className="text-sm text-rose-300">{previewError}</p> : null}
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <h2 className="text-lg font-semibold">Deterministic Output</h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Outputs are calculator-owned and independent from AI suggestions.
-            </p>
+          <div className="grid gap-4 xl:grid-cols-3">
+            {businessCaseSections.map((section) => (
+              <article
+                key={section.id}
+                className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5"
+              >
+                <h3 className="text-base font-semibold">{section.title}</h3>
+                <p className="mt-1 text-xs text-slate-400">{section.description}</p>
 
-            {preview ? (
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <dt className="text-slate-400">Total cost of ownership</dt>
-                <dd className="text-right font-semibold">
-                  {asCurrency(preview.totalCostOfOwnership)}
-                </dd>
-                <dt className="text-slate-400">Total benefit</dt>
-                <dd className="text-right font-semibold">{asCurrency(preview.totalBenefit)}</dd>
-                <dt className="text-slate-400">Net value</dt>
-                <dd className="text-right font-semibold">{asCurrency(preview.netValue)}</dd>
-                <dt className="text-slate-400">Net annual benefit</dt>
-                <dd className="text-right font-semibold">{asCurrency(preview.netAnnualBenefit)}</dd>
-                <dt className="text-slate-400">ROI</dt>
-                <dd className="text-right font-semibold">{asPercent(preview.roiPercent)}</dd>
-                <dt className="text-slate-400">Payback</dt>
-                <dd className="text-right font-semibold">{asMonths(preview.paybackMonths)}</dd>
-              </dl>
-            ) : (
-              <p className="mt-4 text-sm text-slate-300">Run calculation to view outputs.</p>
-            )}
+                <div className="mt-4 space-y-3">
+                  {section.rows.map((row, rowIndex) => (
+                    <div key={row.key} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+                      <p className="text-sm font-medium text-slate-100">{row.label}</p>
+                      <p className="mt-1 text-xs text-slate-400">{row.description}</p>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <label className="text-xs text-slate-400">
+                          One-time
+                          <input
+                            className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
+                            inputMode="decimal"
+                            value={row.oneTime}
+                            onChange={(event) =>
+                              setWorksheetLineValue(section.id, rowIndex, 'oneTime', event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className="text-xs text-slate-400">
+                          Annual (Year 2+)
+                          <input
+                            className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
+                            inputMode="decimal"
+                            value={row.annual}
+                            onChange={(event) =>
+                              setWorksheetLineValue(section.id, rowIndex, 'annual', event.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {section.section ? (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/45 p-3 text-sm">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Section totals</p>
+                    <p className="mt-2 font-semibold text-slate-100">{asCurrency(section.section.total)}</p>
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <h3 className="text-lg font-semibold">Deterministic Output</h3>
+              <p className="mt-1 text-sm text-slate-300">
+                Calculator-owned metrics remain auditable and reproducible.
+              </p>
+
+              {preview ? (
+                <>
+                  <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <dt className="text-slate-400">Total cost of ownership</dt>
+                    <dd className="text-right font-semibold">{asCurrency(preview.totalCostOfOwnership)}</dd>
+                    <dt className="text-slate-400">Total benefit</dt>
+                    <dd className="text-right font-semibold">{asCurrency(preview.totalBenefit)}</dd>
+                    <dt className="text-slate-400">Net value</dt>
+                    <dd className="text-right font-semibold">{asCurrency(preview.netValue)}</dd>
+                    <dt className="text-slate-400">Net annual benefit</dt>
+                    <dd className="text-right font-semibold">{asCurrency(preview.netAnnualBenefit)}</dd>
+                    <dt className="text-slate-400">ROI</dt>
+                    <dd className="text-right font-semibold">{asPercent(preview.roiPercent)}</dd>
+                    <dt className="text-slate-400">Payback</dt>
+                    <dd className="text-right font-semibold">{asMonths(preview.paybackMonths)}</dd>
+                  </dl>
+
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="min-w-full text-left text-xs text-slate-300">
+                      <thead className="text-slate-400">
+                        <tr>
+                          <th className="px-2 py-1">Year</th>
+                          <th className="px-2 py-1 text-right">Net</th>
+                          <th className="px-2 py-1 text-right">Running</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preview.yearLabels.map((label, index) => (
+                          <tr key={label}>
+                            <td className="px-2 py-1">{label}</td>
+                            <td className="px-2 py-1 text-right">{asCurrency(preview.netYearTotals[index] ?? 0)}</td>
+                            <td className="px-2 py-1 text-right">{asCurrency(preview.runningNetTotals[index] ?? 0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-4 text-sm text-slate-300">Run calculation to view outputs.</p>
+              )}
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <h3 className="text-lg font-semibold">Actions</h3>
+              <p className="mt-1 text-sm text-slate-300">
+                Save assumptions to initiative history and continue workflow.
+              </p>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Button onClick={runPreview} disabled={isPreviewLoading || isTemplatesLoading}>
+                  {isPreviewLoading ? 'Calculating...' : 'Calculate Business Case'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={persistBusinessCase}
+                  disabled={!activeInitiativeId || isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Business Case'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={saveAndContinueToDecisionMatrix}
+                  disabled={!activeInitiativeId || isSaving}
+                >
+                  Save and Continue
+                </Button>
+              </div>
+
+              {previewError ? <p className="mt-3 text-sm text-rose-300">{previewError}</p> : null}
+            </div>
           </div>
         </section>
       ) : null}
@@ -591,7 +721,17 @@ export default function Page() {
             >
               {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportMarkdown}
+              disabled={!activeInitiativeId || isMarkdownExporting}
+            >
+              {isMarkdownExporting ? 'Exporting Markdown...' : 'Export Markdown'}
+            </Button>
             {roadmapError ? <p className="text-sm text-rose-300">{roadmapError}</p> : null}
+            {markdownExportError ? (
+              <p className="text-sm text-rose-300">{markdownExportError}</p>
+            ) : null}
           </div>
 
           <p className="mt-4 text-xs uppercase tracking-[0.16em] text-slate-400">

@@ -8,12 +8,12 @@ Only read a nested `AGENTS.md` when you are actively working inside that folder.
 Nested `AGENTS.md` files are local overrides, not a second source of truth.
 
 ## Mission
-Build **AI Decision Studio by Menoko OG** as a secure Electron desktop application for CTO and product/ops leaders evaluating AI initiatives.
+Build **AI Decision Studio by Menoko OG** as a secure web-first platform for CTO and product/ops leaders evaluating AI initiatives.
 
 ## Product rules
-- Offline-first except AI calls
+- Online-first product with resilient local draft UX where practical
 - Export quality is slightly higher priority than import quality
-- Mobile-first responsive renderer for narrow windows
+- Mobile-first responsive web UX for narrow windows
 - No auth in v1
 - OpenAI-compatible provider abstraction from day one
 - Deterministic calculators own all numeric outputs
@@ -23,17 +23,15 @@ Build **AI Decision Studio by Menoko OG** as a secure Electron desktop applicati
 - TypeScript everywhere
 - Strict typing
 - No business logic in React components
-- No unsafe Electron settings
 - No secrets in source control
-- Use typed IPC only
+- Route all client data access through typed API/service boundaries
 - Keep domain logic in packages, not UI layers
 
 ## Security rules
-- `contextIsolation = true`
-- `nodeIntegration = false`
-- `sandbox = true`
+- Apply server-side input validation for all write APIs
+- Never expose provider keys to client bundles
+- Enforce authorization boundaries as auth is introduced beyond v1
 - No remote code execution
-- No renderer filesystem access except through preload bridge
 - All AI calls must pass through the app service layer
 
 ## AI rules
@@ -49,6 +47,12 @@ Build **AI Decision Studio by Menoko OG** as a secure Electron desktop applicati
 - Touch-friendly controls
 - Clear typography and spacing
 - Use responsive layouts that adapt cleanly from mobile-width to desktop-width
+
+## Platform direction
+- `apps/web` is the primary product runtime
+- `apps/desktop` is maintenance-only while migration completes
+- Use Next.js route handlers/server actions as the initial BFF layer
+- Use Prisma + Postgres for web persistence
 
 ## Read these docs next
 - `docs/agent/tasks.md`
