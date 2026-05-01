@@ -77,6 +77,14 @@
 - [x] Completed broader customer-facing UI refinement across workflow, readiness, and summary sections with richer visual hierarchy and executive KPI framing.
 - [x] Corrected worksheet parity calculation model so Year 1 uses one-time + annual values (matching source workbook formula pattern), with updated deterministic expectations.
 - [x] Added comprehension-focused UX upgrades: explicit calculator entry, second calculate action lower on page, dedicated Use Cases section, and full Help section.
+- [x] Added first-class Prisma schema support for readiness and confidence on `Initiative` plus dedicated `BusinessCaseSnapshot` model.
+- [x] Added migration scaffolding for first-class snapshot/readiness persistence (`20260501121500_snapshot_readiness_first_class`).
+- [x] Added readiness API contract (`GET/PATCH /api/v1/initiatives/:id/readiness`) and DTO validation.
+- [x] Updated initiative snapshot service to first-class persistence with backward-safe audit-event dual-write.
+- [x] Updated confidence computation to prefer first-class readiness persistence with legacy workspace fallback.
+- [x] Added markdown export readiness section (confidence + checklist rows).
+- [x] Added plain-English helper guidance for quick estimate, scope/baseline, worksheet one-time vs annual fields, readiness states, and summary ROI/payback explanations.
+- [x] Expanded deterministic calculator assertions with explicit formula and edge-case tests (one-time timing, cumulative totals, ROI/payback null behavior).
 - [ ] Implement section-form interaction model from workspace launcher (open section -> complete form -> close section).
 - [ ] Add reusable section form shell component with required controls (`Save`, `Calculate`, `Clear`, `Close`).
 - [ ] Migrate `Scope & Baseline` into its own section form with save/calculate/clear/close actions.
@@ -90,6 +98,8 @@
 - [ ] Add mobile QA pass for section form open/close and sticky action controls.
 - [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
 - [ ] Add provider settings and auditable AI actions through server-side app service layer.
+- [ ] Apply and verify new Prisma migration in active local DB (`pnpm --filter @ai-cost-tool/db db:migrate`).
+- [ ] Add idempotent backfill from legacy `AuditEvent` snapshot payloads into `BusinessCaseSnapshot`.
 
 ## Export
 

@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Inject, Param, Patch, Post } from '@nest
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CreateInitiativeDto } from './dto/create-initiative.dto.js';
+import { SaveReadinessDto } from './dto/save-readiness.dto.js';
 import { SaveSnapshotDto } from './dto/save-snapshot.dto.js';
 import { SaveWorkspaceStateDto } from './dto/save-workspace-state.dto.js';
 import { UpdateInitiativeDto } from './dto/update-initiative.dto.js';
@@ -16,7 +17,7 @@ export class InitiativesController {
   constructor(
     @Inject(InitiativesService)
     private readonly initiativesService: InitiativesService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ summary: 'List initiative workspaces.' })
@@ -58,6 +59,18 @@ export class InitiativesController {
   @ApiOperation({ summary: 'Get deterministic initiative confidence score from latest readiness state.' })
   getConfidence(@Param('id') id: string) {
     return this.initiativesService.getConfidence(id);
+  }
+
+  @Get(':id/readiness')
+  @ApiOperation({ summary: 'Get first-class readiness checklist state for an initiative.' })
+  getReadiness(@Param('id') id: string) {
+    return this.initiativesService.getReadiness(id);
+  }
+
+  @Patch(':id/readiness')
+  @ApiOperation({ summary: 'Save first-class readiness checklist state for an initiative.' })
+  saveReadiness(@Param('id') id: string, @Body() payload: SaveReadinessDto) {
+    return this.initiativesService.saveReadiness(id, payload);
   }
 
   @Get(':id/snapshots')

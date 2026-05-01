@@ -104,10 +104,7 @@ function parseNumeric(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getSectionTotal(
-  preview: BusinessCasePreviewResult | null,
-  sectionId: WorksheetSectionId,
-) {
+function getSectionTotal(preview: BusinessCasePreviewResult | null, sectionId: WorksheetSectionId) {
   return preview?.sections.find((item) => item.id === sectionId)?.total ?? null;
 }
 
@@ -125,7 +122,9 @@ export default function HomePage() {
   const [snapshotCount, setSnapshotCount] = useState(0);
   const [workspaceBaselineHash, setWorkspaceBaselineHash] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+  const [autosaveStatus, setAutosaveStatus] = useState<
+    'idle' | 'pending' | 'saving' | 'saved' | 'error'
+  >('idle');
   const [lastAutosaveAt, setLastAutosaveAt] = useState<string | null>(null);
   const [input, setInput] = useState<BusinessCasePreviewInput>(createDefaultBusinessCaseInput());
   const [preview, setPreview] = useState<BusinessCasePreviewResult | null>(null);
@@ -277,7 +276,11 @@ export default function HomePage() {
   const createInitiative = async () => {
     setError(null);
 
-    if (initiativeTitle.trim().length < 3 || initiativeSummary.trim().length < 3 || initiativeOwner.trim().length < 2) {
+    if (
+      initiativeTitle.trim().length < 3 ||
+      initiativeSummary.trim().length < 3 ||
+      initiativeOwner.trim().length < 2
+    ) {
       setError('Please provide a title, summary, and owner before creating an initiative.');
       return;
     }
@@ -591,15 +594,22 @@ export default function HomePage() {
 
     setInput((previous) => ({
       ...previous,
-      [field]: field === 'horizonYears' ? Math.max(1, Math.trunc(parsed || 1)) : Math.max(0, parsed),
+      [field]:
+        field === 'horizonYears' ? Math.max(1, Math.trunc(parsed || 1)) : Math.max(0, parsed),
     }));
   };
 
-  const setLine = (section: WorksheetSectionId, index: number, field: 'oneTime' | 'annual', value: string) => {
+  const setLine = (
+    section: WorksheetSectionId,
+    index: number,
+    field: 'oneTime' | 'annual',
+    value: string,
+  ) => {
     const parsed = Math.max(0, parseNumeric(value));
 
     setInput((previous) => {
-      const key = section === 'cost' ? 'costRows' : section === 'benefit' ? 'benefitRows' : 'mitigationRows';
+      const key =
+        section === 'cost' ? 'costRows' : section === 'benefit' ? 'benefitRows' : 'mitigationRows';
       const rows = [...previous.worksheet[key]];
 
       if (!rows[index]) {
@@ -668,11 +678,18 @@ export default function HomePage() {
       <section className="rounded-3xl border border-white/20 bg-gradient-to-br from-[#132a57]/70 via-[#142344]/70 to-[#0f2131]/70 p-6 shadow-[0_20px_80px_rgba(2,12,27,0.45)] backdrop-blur-xl sm:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-cyan-100/90">Executive AI Portfolio Planning</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-5xl">AI Decision Studio</h1>
-            <p className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-slate-500">by Menoko OG</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-cyan-100/90">
+              Executive AI Portfolio Planning
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-5xl">
+              AI Decision Studio
+            </h1>
+            <p className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+              by Menoko OG
+            </p>
             <p className="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
-              Model AI initiative cost, value, and delivery risk with deterministic outputs designed for executive decisions.
+              Model AI initiative cost, value, and delivery risk with deterministic outputs designed
+              for executive decisions.
             </p>
           </div>
           <div className="rounded-2xl border border-cyan-300/35 bg-cyan-500/12 px-4 py-3 text-sm text-cyan-50">
@@ -697,7 +714,9 @@ export default function HomePage() {
             {selectedInitiativeId ? 'Initiative selected' : 'No initiative selected'}
           </span>
           <span className="rounded-full border border-slate-300/30 bg-slate-700/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100">
-            {lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}` : 'No draft saved yet'}
+            {lastSavedAt
+              ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
+              : 'No draft saved yet'}
           </span>
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
@@ -719,7 +738,10 @@ export default function HomePage() {
           >
             <span className="inline-flex items-center gap-2">
               {autosaveStatus === 'saving' ? (
-                <span className="size-1.5 rounded-full bg-current animate-pulse" aria-hidden="true" />
+                <span
+                  className="size-1.5 rounded-full bg-current animate-pulse"
+                  aria-hidden="true"
+                />
               ) : null}
               {autosaveLabel}
             </span>
@@ -734,23 +756,30 @@ export default function HomePage() {
           </div>
           <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Readiness</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">{readinessStats.completionPercent.toFixed(0)}% complete</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">
+              {readinessStats.completionPercent.toFixed(0)}% complete
+            </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Confidence score</p>
             <p className="mt-1 text-sm font-semibold text-slate-100">
-              {confidenceScore === null ? 'Pending checklist data' : `${confidenceScore.toFixed(1)}%`}
+              {confidenceScore === null
+                ? 'Pending checklist data'
+                : `${confidenceScore.toFixed(1)}%`}
             </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Snapshots</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">{snapshotCount} saved versions</p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">
+              {snapshotCount} saved versions
+            </p>
           </div>
         </div>
         <div className="mt-4 rounded-2xl border border-sky-300/30 bg-sky-500/10 p-4 text-sm text-sky-100">
           <p className="font-semibold">Decision-grade outputs</p>
           <p className="mt-1">
-            Calculations remain deterministic, auditable, and aligned to worksheet parity for reliable board-level discussions.
+            Calculations remain deterministic, auditable, and aligned to worksheet parity for
+            reliable board-level discussions.
           </p>
         </div>
         {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
@@ -792,7 +821,11 @@ export default function HomePage() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Button onClick={createInitiative}>Create Initiative</Button>
-          <Button variant="outline" onClick={() => void saveWorkspaceDraft()} disabled={isSavingDraft || !selectedInitiativeId}>
+          <Button
+            variant="outline"
+            onClick={() => void saveWorkspaceDraft()}
+            disabled={isSavingDraft || !selectedInitiativeId}
+          >
             {isSavingDraft ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" />
@@ -802,20 +835,28 @@ export default function HomePage() {
               'Save Draft'
             )}
           </Button>
-          <Button variant="outline" onClick={() => void loadInitiatives()} disabled={isLoadingInitiatives}>
+          <Button
+            variant="outline"
+            onClick={() => void loadInitiatives()}
+            disabled={isLoadingInitiatives}
+          >
             {isLoadingInitiatives ? 'Refreshing...' : 'Refresh List'}
           </Button>
         </div>
 
         <div className="mt-3 grid gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-3 text-xs text-slate-300 sm:grid-cols-3">
           <p>Auto-save: every 30 seconds</p>
-          <p>Confidence score: {confidenceScore === null ? 'n/a' : `${confidenceScore.toFixed(1)}%`}</p>
+          <p>
+            Confidence score: {confidenceScore === null ? 'n/a' : `${confidenceScore.toFixed(1)}%`}
+          </p>
           <p>Snapshots saved: {snapshotCount}</p>
         </div>
 
         <div className="mt-4 grid gap-2">
           {initiatives.length === 0 ? (
-            <p className="text-sm text-slate-400">No initiatives yet. Create one to enable save/load.</p>
+            <p className="text-sm text-slate-400">
+              No initiatives yet. Create one to enable save/load.
+            </p>
           ) : (
             initiatives.map((initiative) => (
               <button
@@ -840,7 +881,8 @@ export default function HomePage() {
       <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">Guided Workflow</h2>
         <p className="mt-1 text-sm text-slate-300">
-          Use the buttons to open one screen at a time. This keeps the UI clean while exposing every field needed for informed decisions.
+          Use the buttons to open one screen at a time. This keeps the UI clean while exposing every
+          field needed for informed decisions.
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {workflowScreens.map((screen, index) => (
@@ -854,7 +896,9 @@ export default function HomePage() {
                   : 'border-white/10 bg-slate-950/30 hover:border-white/25 hover:bg-slate-900/40'
               }`}
             >
-              <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Step {index + 1}</p>
+              <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                Step {index + 1}
+              </p>
               <p className="mt-1 text-sm font-semibold text-slate-100">{screen.label}</p>
               <p className="mt-1 text-xs text-slate-400">{screen.tip}</p>
             </button>
@@ -865,20 +909,27 @@ export default function HomePage() {
       <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">Use Cases</h2>
         <p className="mt-1 text-sm text-slate-300">
-          Use this tool before committing budget, selecting architecture, or presenting AI investment tradeoffs to leadership.
+          Use this tool before committing budget, selecting architecture, or presenting AI
+          investment tradeoffs to leadership.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h3 className="text-sm font-semibold text-slate-100">Prioritize AI initiatives</h3>
-            <p className="mt-1 text-xs text-slate-400">Compare likely value and costs before selecting what to fund first.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Compare likely value and costs before selecting what to fund first.
+            </p>
           </article>
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h3 className="text-sm font-semibold text-slate-100">Plan enterprise modernization</h3>
-            <p className="mt-1 text-xs text-slate-400">Model delivery risk and operational readiness across legacy integration paths.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Model delivery risk and operational readiness across legacy integration paths.
+            </p>
           </article>
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h3 className="text-sm font-semibold text-slate-100">Prepare board-level updates</h3>
-            <p className="mt-1 text-xs text-slate-400">Share deterministic totals, payback outlook, and readiness gaps with confidence.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Share deterministic totals, payback outlook, and readiness gaps with confidence.
+            </p>
           </article>
         </div>
       </section>
@@ -888,34 +939,52 @@ export default function HomePage() {
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h3 className="text-sm font-semibold text-slate-100">1. Start in Quick Estimate</h3>
-            <p className="mt-1 text-xs text-slate-400">Open the Quick Estimate screen to run directional numbers and usage scaling costs first.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Open the Quick Estimate screen to run directional numbers and usage scaling costs
+              first.
+            </p>
           </article>
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h3 className="text-sm font-semibold text-slate-100">2. Fill Scope and Worksheet</h3>
-            <p className="mt-1 text-xs text-slate-400">Enter baseline, then complete Costs, Benefits, and Risk Mitigations with one-time and annual values.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Enter baseline, then complete Costs, Benefits, and Risk Mitigations with one-time and
+              annual values.
+            </p>
           </article>
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h3 className="text-sm font-semibold text-slate-100">3. Track Readiness</h3>
-            <p className="mt-1 text-xs text-slate-400">Mark each readiness area as Unknown, Draft, or Ready to surface delivery risk early.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Mark each readiness area as Unknown, Draft, or Ready to surface delivery risk early.
+            </p>
           </article>
           <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">4. Calculate and Review Summary</h3>
-            <p className="mt-1 text-xs text-slate-400">Use Calculate to refresh deterministic totals, ROI, payback, and yearly net projections.</p>
+            <h3 className="text-sm font-semibold text-slate-100">
+              4. Calculate and Review Summary
+            </h3>
+            <p className="mt-1 text-xs text-slate-400">
+              Use Calculate to refresh deterministic totals, ROI, payback, and yearly net
+              projections.
+            </p>
           </article>
         </div>
         <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-4 text-xs text-cyan-100">
-          Formula note: Year 1 includes one-time plus annual values. Years 2+ include annual values only. Running totals are cumulative year-over-year.
+          Formula note: Year 1 includes one-time plus annual values. Years 2+ include annual values
+          only. Running totals are cumulative year-over-year.
         </div>
       </section>
 
       {activeScreen === 'quick-estimate' ? (
-        <section id="calculators" className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+        <section
+          id="calculators"
+          className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm"
+        >
           <div className="flex items-center gap-2">
             <Calculator className="size-5" />
             <h3 className="text-lg font-semibold">Calculator Zone: Quick Estimate</h3>
           </div>
           <p className="mt-1 text-sm text-slate-300">
-            Use this for rough what-if analysis before completing worksheet details. This is the first calculator section.
+            Use this for rough what-if analysis before completing worksheet details. This is the
+            first calculator section.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="text-sm text-slate-200">
@@ -924,8 +993,13 @@ export default function HomePage() {
                 className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                 inputMode="decimal"
                 value={quickBaseline}
-                onChange={(event) => setQuickBaseline(Math.max(0, parseNumeric(event.target.value)))}
+                onChange={(event) =>
+                  setQuickBaseline(Math.max(0, parseNumeric(event.target.value)))
+                }
               />
+              <span className="mt-1 block text-xs text-slate-400">
+                How much you spend each year today before this AI project.
+              </span>
             </label>
             <label className="text-sm text-slate-200">
               Savings target (%)
@@ -933,8 +1007,13 @@ export default function HomePage() {
                 className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                 inputMode="decimal"
                 value={quickReductionPercent}
-                onChange={(event) => setQuickReductionPercent(Math.max(0, parseNumeric(event.target.value)))}
+                onChange={(event) =>
+                  setQuickReductionPercent(Math.max(0, parseNumeric(event.target.value)))
+                }
               />
+              <span className="mt-1 block text-xs text-slate-400">
+                Percent of current spend you aim to save after rollout.
+              </span>
             </label>
             <label className="text-sm text-slate-200">
               One-time investment
@@ -944,6 +1023,9 @@ export default function HomePage() {
                 value={quickOneTime}
                 onChange={(event) => setQuickOneTime(Math.max(0, parseNumeric(event.target.value)))}
               />
+              <span className="mt-1 block text-xs text-slate-400">
+                Money you spend once to start the project.
+              </span>
             </label>
             <label className="text-sm text-slate-200">
               Annual run cost
@@ -951,8 +1033,13 @@ export default function HomePage() {
                 className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                 inputMode="decimal"
                 value={quickAnnualRun}
-                onChange={(event) => setQuickAnnualRun(Math.max(0, parseNumeric(event.target.value)))}
+                onChange={(event) =>
+                  setQuickAnnualRun(Math.max(0, parseNumeric(event.target.value)))
+                }
               />
+              <span className="mt-1 block text-xs text-slate-400">
+                Money you keep paying each year after launch.
+              </span>
             </label>
             <label className="text-sm text-slate-200">
               Planning years
@@ -960,13 +1047,20 @@ export default function HomePage() {
                 className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                 inputMode="numeric"
                 value={quickHorizon}
-                onChange={(event) => setQuickHorizon(Math.max(1, Math.trunc(parseNumeric(event.target.value) || 1)))}
+                onChange={(event) =>
+                  setQuickHorizon(Math.max(1, Math.trunc(parseNumeric(event.target.value) || 1)))
+                }
               />
+              <span className="mt-1 block text-xs text-slate-400">
+                How many years you want to model in this estimate.
+              </span>
             </label>
           </div>
           <dl className="mt-4 grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-4 sm:grid-cols-2">
             <div>
-              <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Projected annual benefit</dt>
+              <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                Projected annual benefit
+              </dt>
               <dd className="text-lg font-semibold">{asCurrency(quickEstimate.annualBenefit)}</dd>
             </div>
             <div>
@@ -986,7 +1080,8 @@ export default function HomePage() {
           <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
             <h4 className="text-base font-semibold">Usage Scaling Calculator</h4>
             <p className="mt-1 text-sm text-slate-300">
-              AI behaves like metered infrastructure. Forecast usage at scale before committing architecture.
+              AI behaves like metered infrastructure. Forecast usage at scale before committing
+              architecture.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <label className="text-sm text-slate-200">
@@ -995,8 +1090,13 @@ export default function HomePage() {
                   className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                   inputMode="numeric"
                   value={monthlyActiveUsers}
-                  onChange={(event) => setMonthlyActiveUsers(Math.max(0, Math.trunc(parseNumeric(event.target.value))))}
+                  onChange={(event) =>
+                    setMonthlyActiveUsers(Math.max(0, Math.trunc(parseNumeric(event.target.value))))
+                  }
                 />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Estimated users who will use the AI feature each month.
+                </span>
               </label>
               <label className="text-sm text-slate-200">
                 Requests per user / month
@@ -1005,9 +1105,14 @@ export default function HomePage() {
                   inputMode="numeric"
                   value={requestsPerUserPerMonth}
                   onChange={(event) =>
-                    setRequestsPerUserPerMonth(Math.max(0, Math.trunc(parseNumeric(event.target.value))))
+                    setRequestsPerUserPerMonth(
+                      Math.max(0, Math.trunc(parseNumeric(event.target.value))),
+                    )
                   }
                 />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Average prompts each user sends per month.
+                </span>
               </label>
               <label className="text-sm text-slate-200">
                 Avg prompt tokens / request
@@ -1015,8 +1120,13 @@ export default function HomePage() {
                   className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                   inputMode="numeric"
                   value={avgPromptTokens}
-                  onChange={(event) => setAvgPromptTokens(Math.max(0, Math.trunc(parseNumeric(event.target.value))))}
+                  onChange={(event) =>
+                    setAvgPromptTokens(Math.max(0, Math.trunc(parseNumeric(event.target.value))))
+                  }
                 />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Input token size per request before model response.
+                </span>
               </label>
               <label className="text-sm text-slate-200">
                 Avg completion tokens / request
@@ -1024,8 +1134,15 @@ export default function HomePage() {
                   className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                   inputMode="numeric"
                   value={avgCompletionTokens}
-                  onChange={(event) => setAvgCompletionTokens(Math.max(0, Math.trunc(parseNumeric(event.target.value))))}
+                  onChange={(event) =>
+                    setAvgCompletionTokens(
+                      Math.max(0, Math.trunc(parseNumeric(event.target.value))),
+                    )
+                  }
                 />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Output token size generated by the model each request.
+                </span>
               </label>
               <label className="text-sm text-slate-200">
                 API cost per 1K tokens (USD)
@@ -1033,31 +1150,56 @@ export default function HomePage() {
                   className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                   inputMode="decimal"
                   value={apiCostPer1kTokens}
-                  onChange={(event) => setApiCostPer1kTokens(Math.max(0, parseNumeric(event.target.value)))}
+                  onChange={(event) =>
+                    setApiCostPer1kTokens(Math.max(0, parseNumeric(event.target.value)))
+                  }
                 />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Provider price in dollars for each 1,000 tokens.
+                </span>
               </label>
             </div>
 
             <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Monthly requests</dt>
-                <dd className="text-base font-semibold">{usageScaleEstimate.monthlyRequests.toLocaleString()}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                  Monthly requests
+                </dt>
+                <dd className="text-base font-semibold">
+                  {usageScaleEstimate.monthlyRequests.toLocaleString()}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Tokens per request</dt>
-                <dd className="text-base font-semibold">{usageScaleEstimate.tokensPerRequest.toLocaleString()}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                  Tokens per request
+                </dt>
+                <dd className="text-base font-semibold">
+                  {usageScaleEstimate.tokensPerRequest.toLocaleString()}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Monthly tokens</dt>
-                <dd className="text-base font-semibold">{usageScaleEstimate.monthlyTokens.toLocaleString()}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                  Monthly tokens
+                </dt>
+                <dd className="text-base font-semibold">
+                  {usageScaleEstimate.monthlyTokens.toLocaleString()}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Monthly API cost</dt>
-                <dd className="text-base font-semibold">{asCurrency(usageScaleEstimate.monthlyApiCost)}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                  Monthly API cost
+                </dt>
+                <dd className="text-base font-semibold">
+                  {asCurrency(usageScaleEstimate.monthlyApiCost)}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Annual API cost</dt>
-                <dd className="text-base font-semibold">{asCurrency(usageScaleEstimate.annualApiCost)}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                  Annual API cost
+                </dt>
+                <dd className="text-base font-semibold">
+                  {asCurrency(usageScaleEstimate.annualApiCost)}
+                </dd>
               </div>
             </dl>
           </div>
@@ -1067,7 +1209,9 @@ export default function HomePage() {
       {activeScreen === 'scope' ? (
         <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
           <h3 className="text-lg font-semibold">Scope & Baseline</h3>
-          <p className="mt-1 text-sm text-slate-300">Set your baseline first so downstream cost and value projections stay grounded.</p>
+          <p className="mt-1 text-sm text-slate-300">
+            Set your baseline first so downstream cost and value projections stay grounded.
+          </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm text-slate-200">
               Baseline annual cost
@@ -1077,6 +1221,10 @@ export default function HomePage() {
                 value={input.baselineAnnualCost}
                 onChange={(event) => setMeta('baselineAnnualCost', event.target.value)}
               />
+              <span className="text-xs text-slate-400">
+                Current yearly spend before this initiative. Example: existing team and tooling
+                cost.
+              </span>
             </label>
             <label className="flex flex-col gap-1 text-sm text-slate-200">
               Horizon years
@@ -1086,6 +1234,9 @@ export default function HomePage() {
                 value={input.horizonYears}
                 onChange={(event) => setMeta('horizonYears', event.target.value)}
               />
+              <span className="text-xs text-slate-400">
+                How many years to project for totals, ROI, and payback.
+              </span>
             </label>
           </div>
         </section>
@@ -1100,16 +1251,23 @@ export default function HomePage() {
               return section.id === 'mitigation';
             })
             .map((section) => (
-              <article key={section.id} className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 xl:col-span-3">
+              <article
+                key={section.id}
+                className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 xl:col-span-3"
+              >
                 <h3 className="text-base font-semibold">{section.title}</h3>
                 <p className="mt-1 text-sm text-slate-300">{section.subtitle}</p>
                 <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs text-amber-100">
-                  Enter Year 1 setup spend under one-time, then steady-state spend/value under annual.
+                  Enter Year 1 setup spend under one-time, then steady-state spend/value under
+                  annual.
                 </div>
 
                 <div className="mt-4 space-y-3">
                   {section.rows.map((row, index) => (
-                    <div key={row.key} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+                    <div
+                      key={row.key}
+                      className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
+                    >
                       <p className="text-sm font-medium text-slate-100">{row.label}</p>
                       <p className="mt-1 text-xs text-slate-400">{row.description}</p>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1119,8 +1277,13 @@ export default function HomePage() {
                             className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
                             inputMode="decimal"
                             value={row.oneTime}
-                            onChange={(event) => setLine(section.id, index, 'oneTime', event.target.value)}
+                            onChange={(event) =>
+                              setLine(section.id, index, 'oneTime', event.target.value)
+                            }
                           />
+                          <span className="mt-1 block text-[11px] text-slate-500">
+                            Used in Year 1 only.
+                          </span>
                         </label>
                         <label className="text-xs text-slate-400">
                           Annual (Year 2+)
@@ -1128,8 +1291,13 @@ export default function HomePage() {
                             className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
                             inputMode="decimal"
                             value={row.annual}
-                            onChange={(event) => setLine(section.id, index, 'annual', event.target.value)}
+                            onChange={(event) =>
+                              setLine(section.id, index, 'annual', event.target.value)
+                            }
                           />
+                          <span className="mt-1 block text-[11px] text-slate-500">
+                            Repeats every year after Year 1.
+                          </span>
                         </label>
                       </div>
                     </div>
@@ -1144,13 +1312,20 @@ export default function HomePage() {
         <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
           <h3 className="text-lg font-semibold">AI Cost Readiness Checklist</h3>
           <p className="mt-1 text-sm text-slate-300">
-            Make hidden cost and execution complexity visible early. Mark each item as Unknown, Draft, or Ready.
+            Make hidden cost and execution complexity visible early. Mark each item as Unknown,
+            Draft, or Ready.
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            Unknown = not assessed yet, Draft = in progress, Ready = validated with owner and
+            evidence.
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm">
               <p className="text-xs uppercase tracking-[0.12em] text-emerald-200/80">Ready</p>
-              <p className="mt-1 text-lg font-semibold text-emerald-100">{readinessStats.readyCount}</p>
+              <p className="mt-1 text-lg font-semibold text-emerald-100">
+                {readinessStats.readyCount}
+              </p>
             </div>
             <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-3 text-sm">
               <p className="text-xs uppercase tracking-[0.12em] text-sky-200/80">Draft</p>
@@ -1158,11 +1333,15 @@ export default function HomePage() {
             </div>
             <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm">
               <p className="text-xs uppercase tracking-[0.12em] text-amber-200/80">Unknown</p>
-              <p className="mt-1 text-lg font-semibold text-amber-100">{readinessStats.unknownCount}</p>
+              <p className="mt-1 text-lg font-semibold text-amber-100">
+                {readinessStats.unknownCount}
+              </p>
             </div>
             <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm">
               <p className="text-xs uppercase tracking-[0.12em] text-violet-200/80">Completion</p>
-              <p className="mt-1 text-lg font-semibold text-violet-100">{readinessStats.completionPercent.toFixed(0)}%</p>
+              <p className="mt-1 text-lg font-semibold text-violet-100">
+                {readinessStats.completionPercent.toFixed(0)}%
+              </p>
             </div>
           </div>
 
@@ -1170,7 +1349,10 @@ export default function HomePage() {
             {READINESS_ITEMS.map((item) => {
               const state = readiness[item.key] ?? { status: 'unknown' };
               return (
-                <article key={item.key} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+                <article
+                  key={item.key}
+                  className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
+                >
                   <p className="text-sm font-semibold text-slate-100">{item.label}</p>
                   <p className="mt-1 text-xs text-slate-400">{item.description}</p>
 
@@ -1178,7 +1360,9 @@ export default function HomePage() {
                     <button
                       type="button"
                       className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'unknown' ? 'border-amber-300/60 bg-amber-500/20 text-amber-100' : 'border-white/10 bg-slate-900/45'
+                        state.status === 'unknown'
+                          ? 'border-amber-300/60 bg-amber-500/20 text-amber-100'
+                          : 'border-white/10 bg-slate-900/45'
                       }`}
                       onClick={() => setReadinessStatus(item.key, 'unknown')}
                     >
@@ -1187,7 +1371,9 @@ export default function HomePage() {
                     <button
                       type="button"
                       className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'draft' ? 'border-sky-300/60 bg-sky-500/20 text-sky-100' : 'border-white/10 bg-slate-900/45'
+                        state.status === 'draft'
+                          ? 'border-sky-300/60 bg-sky-500/20 text-sky-100'
+                          : 'border-white/10 bg-slate-900/45'
                       }`}
                       onClick={() => setReadinessStatus(item.key, 'draft')}
                     >
@@ -1224,18 +1410,28 @@ export default function HomePage() {
               <>
                 <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <dt className="text-slate-400">Total cost of ownership</dt>
-                  <dd className="text-right font-semibold">{asCurrency(preview.totalCostOfOwnership)}</dd>
+                  <dd className="text-right font-semibold">
+                    {asCurrency(preview.totalCostOfOwnership)}
+                  </dd>
                   <dt className="text-slate-400">Total benefit</dt>
                   <dd className="text-right font-semibold">{asCurrency(preview.totalBenefit)}</dd>
                   <dt className="text-slate-400">Net value</dt>
                   <dd className="text-right font-semibold">{asCurrency(preview.netValue)}</dd>
                   <dt className="text-slate-400">Net annual benefit</dt>
-                  <dd className="text-right font-semibold">{asCurrency(preview.netAnnualBenefit)}</dd>
+                  <dd className="text-right font-semibold">
+                    {asCurrency(preview.netAnnualBenefit)}
+                  </dd>
                   <dt className="text-slate-400">ROI</dt>
                   <dd className="text-right font-semibold">{asPercent(preview.roiPercent)}</dd>
                   <dt className="text-slate-400">Payback</dt>
                   <dd className="text-right font-semibold">{asMonths(preview.paybackMonths)}</dd>
                 </dl>
+                <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/30 p-3 text-xs text-slate-300">
+                  <p>ROI shows how much value you get back compared to what you spend.</p>
+                  <p className="mt-1">
+                    Payback shows when cumulative gains recover your initial investment.
+                  </p>
+                </div>
                 <div className="mt-4 grid gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
                   <p>Cost section total: {asCurrency(getSectionTotal(preview, 'cost'))}</p>
                   <p>Benefit section total: {asCurrency(getSectionTotal(preview, 'benefit'))}</p>
@@ -1243,13 +1439,19 @@ export default function HomePage() {
                 </div>
                 <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
                   <p className="font-semibold">Readiness Snapshot</p>
-                  <p className="mt-1">Ready items: {readinessStats.readyCount} / {READINESS_ITEMS.length}</p>
+                  <p className="mt-1">
+                    Ready items: {readinessStats.readyCount} / {READINESS_ITEMS.length}
+                  </p>
                   <p>Open gaps (unknown): {readinessStats.unknownCount}</p>
-                  <p>Scale estimate annual API cost: {asCurrency(usageScaleEstimate.annualApiCost)}</p>
+                  <p>
+                    Scale estimate annual API cost: {asCurrency(usageScaleEstimate.annualApiCost)}
+                  </p>
                 </div>
               </>
             ) : (
-              <p className="mt-4 text-sm text-slate-300">Press calculate to view deterministic outputs.</p>
+              <p className="mt-4 text-sm text-slate-300">
+                Press calculate to view deterministic outputs.
+              </p>
             )}
           </div>
 
@@ -1260,22 +1462,32 @@ export default function HomePage() {
                 Guided Next Step
               </CardTitle>
               <CardDescription className="text-sm leading-6 text-slate-300">
-                Future agentic capability will suggest platform options, modern data points, and tradeoffs based on what users enter in each step.
+                Future agentic capability will suggest platform options, modern data points, and
+                tradeoffs based on what users enter in each step.
               </CardDescription>
             </CardHeader>
             <CardContent className="px-5 pb-5 pt-0 text-sm text-slate-300">
               <div className="space-y-3">
                 <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
                   <Gauge className="mt-0.5 size-4 text-cyan-200" />
-                  <p>Use summary metrics to decide whether this initiative should move to pilot, redesign, or pause.</p>
+                  <p>
+                    Use summary metrics to decide whether this initiative should move to pilot,
+                    redesign, or pause.
+                  </p>
                 </div>
                 <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
                   <Layers3 className="mt-0.5 size-4 text-violet-200" />
-                  <p>Save snapshots after each major assumption shift to track how strategy changes impact ROI.</p>
+                  <p>
+                    Save snapshots after each major assumption shift to track how strategy changes
+                    impact ROI.
+                  </p>
                 </div>
                 <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
                   <ShieldCheck className="mt-0.5 size-4 text-emerald-200" />
-                  <p>Treat unknown readiness items as execution risk until cost ownership and controls are defined.</p>
+                  <p>
+                    Treat unknown readiness items as execution risk until cost ownership and
+                    controls are defined.
+                  </p>
                 </div>
               </div>
             </CardContent>

@@ -23,71 +23,71 @@ export const WORKSHEET_ROW_TEMPLATES: Record<WorksheetSectionId, Array<Omit<Work
     {
       key: 'data-acquisition',
       label: 'Data acquisition',
-      description: 'Costs of curating data with quality, quantity, and completeness.',
+      description: 'Money for collecting and cleaning data so the AI can work reliably.',
     },
     {
       key: 'data-science-training',
       label: 'Data Science including training',
-      description: 'Cost of data science R&D and model training.',
+      description: 'Team time and tooling for experiments, model setup, and training.',
     },
     {
       key: 'engineering',
       label: 'Engineering',
-      description: 'Technology expense to build and integrate product capabilities.',
+      description: 'Developer work to build features and connect AI into your product.',
     },
     {
       key: 'infrastructure',
       label: 'Infrastructure',
-      description: 'Cost to support technology infrastructure.',
+      description: 'Cloud, storage, and platform services needed to run the solution.',
     },
     {
       key: 'ai-api',
       label: 'AI API',
-      description: 'Ongoing API and model inference costs.',
+      description: 'Pay-as-you-go model and API usage charges.',
     },
     {
       key: 'operations-business',
       label: 'Operations / business',
-      description: 'Business operations and rollout support costs.',
+      description: 'Rollout, training, and process updates for day-to-day teams.',
     },
     {
       key: 'technical-support',
       label: 'Technical support',
-      description: 'Post-launch support and maintenance effort.',
+      description: 'Bug fixes, monitoring, and maintenance after launch.',
     },
   ],
   benefit: [
     {
       key: 'automation',
       label: 'Automation',
-      description: 'Business impact and justified savings from process automation.',
+      description: 'Money saved when repetitive work is handled automatically.',
     },
     {
       key: 'augmentation',
       label: 'Augmentation',
-      description: 'Productivity uplift from human-AI augmentation.',
+      description: 'Output gains when people work faster with AI assistance.',
     },
     {
       key: 'differentiation',
       label: 'Differentiation',
-      description: 'Revenue and strategic upside from differentiated capabilities.',
+      description: 'New revenue or strategic upside from better customer experiences.',
     },
   ],
   mitigation: [
     {
       key: 'technical-risks',
       label: 'Technical risks',
-      description: 'Risk mitigation actions and controls for technical delivery risks.',
+      description: 'Money spent to reduce outages, quality issues, or integration failures.',
     },
     {
       key: 'operational-risks',
       label: 'Operational risks',
-      description: 'Risk mitigation actions for adoption and operational continuity.',
+      description: 'Money spent to reduce rollout, adoption, and support risks.',
     },
     {
       key: 'strategic-risks',
       label: 'Strategic risks',
-      description: 'Mitigations for strategic, regulatory, or reputational risk.',
+      description: 'Money spent on compliance, governance, and reputation protection.',
     },
   ],
 };

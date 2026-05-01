@@ -28,21 +28,38 @@ enum ActorType {
 }
 
 model Initiative {
-  id           String         @id @default(cuid())
-  title        String
-  summary      String
-  owner        String
-  phase        InitiativePhase @default(DISCOVERY)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  costLines    CostLine[]
-  benefitLines BenefitLine[]
-  decisions    Decision[]
+  id            String          @id @default(cuid())
+  title         String
+  summary       String
+  owner         String
+  phase         InitiativePhase @default(DISCOVERY)
+  readinessJson Json?
+  confidenceScore Float         @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  costLines     CostLine[]
+  benefitLines  BenefitLine[]
+  decisions     Decision[]
   roadmapPhases RoadmapPhase[]
-  auditEvents  AuditEvent[]
-  aiRuns       AIRun[]
+  snapshots     BusinessCaseSnapshot[]
+  auditEvents   AuditEvent[]
+  aiRuns        AIRun[]
 
   @@index([phase])
+}
+
+model BusinessCaseSnapshot {
+  id           String      @id @default(cuid())
+  initiativeId String
+  version      Int
+  label        String?
+  input        Json
+  result       Json
+  createdAt    DateTime    @default(now())
+  initiative   Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, version])
+  @@index([initiativeId, createdAt])
 }
 
 model CostLine {

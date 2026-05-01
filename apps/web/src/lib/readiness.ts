@@ -10,62 +10,62 @@ export const READINESS_ITEMS: ReadinessItem[] = [
   {
     key: 'infrastructure-compute',
     label: 'Infrastructure and compute',
-    description: 'Compute, storage, networking, and environment footprint.',
+    description: 'Do we have enough cloud capacity, storage, and environments to run this safely?',
   },
   {
     key: 'model-api-costs',
     label: 'Model and API costs',
-    description: 'Token usage, model mix, fallback models, and vendor pricing assumptions.',
+    description: 'Do we understand token usage, model pricing, and fallback cost scenarios?',
   },
   {
     key: 'data-engineering-pipelines',
     label: 'Data engineering pipelines',
-    description: 'Data ingestion, transformation, vector indexing, and refresh cadence.',
+    description: 'Can data be collected, cleaned, and refreshed on a reliable schedule?',
   },
   {
     key: 'mlops-monitoring',
     label: 'MLOps and monitoring',
-    description: 'Quality telemetry, drift, retraining triggers, and reliability observability.',
+    description: 'Can we monitor quality and catch drift before users are affected?',
   },
   {
     key: 'talent-requirements',
     label: 'Talent requirements',
-    description: 'Engineering and specialized AI roles required to build and operate.',
+    description: 'Do we have the right people and enough time to build and run this?',
   },
   {
     key: 'integration-complexity',
     label: 'Integration complexity',
-    description: 'Legacy systems, API dependencies, and migration complexity constraints.',
+    description: 'How hard is it to connect this with current systems and data sources?',
   },
   {
     key: 'security-compliance',
     label: 'Security and compliance',
-    description: 'Data handling, governance controls, regulatory obligations, and audits.',
+    description: 'Are privacy, governance, and compliance controls clearly defined?',
   },
   {
     key: 'reliability-risk',
     label: 'Reliability and risk',
-    description: 'Failure modes, rollback plans, business continuity, and risk response.',
+    description: 'Do we have rollback plans and response steps if something fails?',
   },
   {
     key: 'product-ux-impact',
     label: 'Product and UX impact',
-    description: 'User journey changes, friction points, and adoption implications.',
+    description: 'Will this improve user experience without adding confusion or friction?',
   },
   {
     key: 'financial-strategy',
     label: 'Financial strategy',
-    description: 'Budget ownership, pricing model, ROI thresholds, and scale targets.',
+    description: 'Is budget ownership clear, and do we agree on ROI and scale goals?',
   },
   {
     key: 'legal-ip',
     label: 'Legal and IP considerations',
-    description: 'Licensing, terms, IP ownership, data rights, and contract implications.',
+    description: 'Are licensing, data rights, and IP responsibilities fully understood?',
   },
   {
     key: 'change-management',
     label: 'Change management',
-    description: 'Training, communication, process updates, and stakeholder adoption.',
+    description: 'Are training, communications, and team adoption plans ready?',
   },
 ];
 

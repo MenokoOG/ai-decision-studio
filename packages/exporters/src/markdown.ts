@@ -62,12 +62,25 @@ type RoadmapWorkspace = {
     phases: RoadmapPhase[];
 };
 
+type ReadinessItem = {
+    key: string;
+    label: string;
+    status: 'unknown' | 'draft' | 'ready';
+    notes?: string;
+};
+
+type ReadinessWorkspace = {
+    confidenceScore: number | null;
+    items: ReadinessItem[];
+};
+
 export interface MarkdownExportInput {
     initiative: InitiativeSummary;
     assumptions: BusinessCaseAssumptions;
     preview: BusinessCasePreview;
     decisionMatrix: DecisionMatrixWorkspace;
     roadmap: RoadmapWorkspace;
+    readiness?: ReadinessWorkspace;
     exportedAt?: string;
 }
 
@@ -120,6 +133,18 @@ function escapeCell(value: string) {
     return value.replace(/\|/g, '\\|').replace(/\n/g, '<br/>');
 }
 
+function asReadinessStatus(value: ReadinessItem['status']) {
+    if (value === 'ready') {
+        return 'Ready';
+    }
+
+    if (value === 'draft') {
+        return 'Draft';
+    }
+
+    return 'Unknown';
+}
+
 function buildWorksheetRows(rows: BusinessCaseWorksheetLine[]) {
     if (rows.length === 0) {
         return '| _No rows_ | - | - | - |';
@@ -158,6 +183,16 @@ export function buildInitiativeMarkdownExport(input: MarkdownExportInput): Markd
                 )
                 .join('\n')
             : '| _No roadmap phases saved yet_ | - | - | - | - | - |';
+
+    const readinessRows =
+        input.readiness && input.readiness.items.length > 0
+            ? input.readiness.items
+                .map(
+                    (item) =>
+                        `| ${escapeCell(item.label)} | ${asReadinessStatus(item.status)} | ${escapeCell(item.notes ?? '')} |`,
+                )
+                .join('\n')
+            : '| _No readiness checklist saved yet_ | - | - |';
 
     const markdown = `# AI Decision Studio Export
 
@@ -217,6 +252,16 @@ ${decisionRows}
 | Phase | Title | Lane | Start | End | Deliverables |
 | ---: | --- | --- | --- | --- | --- |
 ${roadmapRows}
+
+## Readiness
+
+| Metric | Value |
+| --- | ---: |
+| Confidence Score | ${asPercent(input.readiness?.confidenceScore ?? null)} |
+
+| Category | Status | Notes |
+| --- | --- | --- |
+${readinessRows}
 `;
 
     return {
