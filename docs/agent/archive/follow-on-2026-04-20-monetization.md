@@ -19,6 +19,7 @@ Create near-term subscription income for AI Decision Studio while protecting cor
 ## Subscription Model (Initial)
 
 ### Tier 1: Solo
+
 - Price target: $29-$49/month
 - Audience: independent builders, consultants, small founders
 - Includes:
@@ -28,6 +29,7 @@ Create near-term subscription income for AI Decision Studio while protecting cor
   - Basic export
 
 ### Tier 2: Team
+
 - Price target: $99-$199/month
 - Audience: startups and product/ops teams
 - Includes:
@@ -37,6 +39,7 @@ Create near-term subscription income for AI Decision Studio while protecting cor
   - Advanced export/report packaging
 
 ### Optional Add-On: Advisory
+
 - Price target: custom / higher-ticket
 - Includes:
   - Guided setup
@@ -75,16 +78,19 @@ Create near-term subscription income for AI Decision Studio while protecting cor
 ## Weekly Execution Plan
 
 ### Week 1
+
 - Billing integration and webhook handling
 - Entitlement checks in API
 - Basic pricing page and checkout flow
 
 ### Week 2
+
 - Limit gates in web UX (clear upgrade prompts)
 - Billing settings page
 - Trial/free plan onboarding
 
 ### Week 3
+
 - Launch offer + outreach campaign
 - Capture first paying users
 - Iterate pricing based on conversion feedback
@@ -123,4 +129,4 @@ Create near-term subscription income for AI Decision Studio while protecting cor
 
 ## Next Session Prompt
 
-Continue from follow-on monetization plan. Implement billing/auth foundations in API and web with strict entitlement checks for saved initiatives, snapshots, and exports. Update docs/agent/tasks.md and docs/agent/handoff-2026-04-20.md as each slice lands.
+Continue from follow-on monetization plan. Implement billing/auth foundations in API and web with strict entitlement checks for saved initiatives, snapshots, and exports. Update docs/agent/tasks.md and docs/agent/archive/handoff-2026-04-20.md as each slice lands.
