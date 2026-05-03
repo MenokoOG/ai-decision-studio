@@ -85,26 +85,28 @@
 - [x] Added markdown export readiness section (confidence + checklist rows).
 - [x] Added plain-English helper guidance for quick estimate, scope/baseline, worksheet one-time vs annual fields, readiness states, and summary ROI/payback explanations.
 - [x] Expanded deterministic calculator assertions with explicit formula and edge-case tests (one-time timing, cumulative totals, ROI/payback null behavior).
-- [ ] Implement section-form interaction model from workspace launcher (open section -> complete form -> close section).
-- [ ] Add reusable section form shell component with required controls (`Save`, `Calculate`, `Clear`, `Close`).
-- [ ] Migrate `Scope & Baseline` into its own section form with save/calculate/clear/close actions.
-- [ ] Migrate `Costs` into its own section form with save/calculate/clear/close actions.
-- [ ] Migrate `Benefits` into its own section form with save/calculate/clear/close actions.
-- [ ] Migrate `Risk Mitigations` into its own section form with save/calculate/clear/close actions.
-- [ ] Migrate `Readiness` into its own section form with save/calculate/clear/close actions.
-- [ ] Migrate `Summary` into its own section view with close action and recompute shortcut.
-- [ ] Ensure every section-level `Calculate` action contributes to and refreshes the shared overall report state.
-- [ ] Add section-level clear behavior guardrail (confirm before destructive clear).
+- [x] Implement section-form interaction model from workspace launcher (open section -> complete form -> close section).
+- [x] Add reusable section form shell component with required controls (`Save`, `Calculate`, `Clear`, `Close`).
+- [x] Migrate `Scope & Baseline` into its own section form with save/calculate/clear/close actions.
+- [x] Migrate `Costs` into its own section form with save/calculate/clear/close actions.
+- [x] Migrate `Benefits` into its own section form with save/calculate/clear/close actions.
+- [x] Migrate `Risk Mitigations` into its own section form with save/calculate/clear/close actions.
+- [x] Migrate `Readiness` into its own section form with save/calculate/clear/close actions.
+- [x] Migrate `Summary` into its own section view with close action and recompute shortcut.
+- [x] Ensure every section-level `Calculate` action contributes to and refreshes the shared overall report state.
+- [x] Add section-level clear behavior guardrail (confirm before destructive clear).
 - [ ] Add mobile QA pass for section form open/close and sticky action controls.
+- [x] Added Workspace Launcher hub view with per-section status pills (Ready / Draft / Not started) and `launcher` as the new default workflow screen; ancillary Use Cases and Help blocks now render only on the launcher so section forms stay focused.
 - [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
 - [ ] Add provider settings and auditable AI actions through server-side app service layer.
-- [ ] Apply and verify new Prisma migration in active local DB (`pnpm --filter @ai-cost-tool/db db:migrate`).
-- [ ] Add idempotent backfill from legacy `AuditEvent` snapshot payloads into `BusinessCaseSnapshot`.
+- [x] Apply and verify new Prisma migration in active local DB (`pnpm --filter @ai-cost-tool/db db:migrate`).
+- [x] Add idempotent backfill from legacy `AuditEvent` snapshot payloads into `BusinessCaseSnapshot`.
+- [x] Verified 2026-05-01 handoff end-to-end on local dev DB (2026-05-03): migration `20260501121500_snapshot_readiness_first_class` applied; backfill script `packages/db/prisma/backfill-snapshots.ts` (npm `db:backfill-snapshots`) inserted 5 legacy snapshots on first run and 0 on second run (idempotent); smoke-tested `GET/PATCH /api/v1/initiatives/:id/readiness`, `GET /api/v1/initiatives/:id/confidence`, `POST/GET /api/v1/initiatives/:id/snapshots` — all 2xx, readiness PATCH persists `Initiative.readinessJson` + `confidenceScore` (83.3 with 2 ready / 1 draft), live snapshot POST received version 5 continuing from backfilled versions 1-4.
 
 ## Export
 
 - [x] Markdown export
-- [ ] Excel export
+- [ ] Excel export — **scaffolded but unverified**: `packages/exporters/src/excel.ts` + `excel.test.ts` + shared `types.ts` + barrel `index.ts` written; `exceljs ^4.4.0` added to `packages/exporters/package.json`; `markdown.ts` refactored to share types. `pnpm install` was interrupted before completion, so dep is not yet in `node_modules` and nothing has been typechecked or tested. Desktop IPC parity (`exportInitiativeExcel`) and any web download surface are not yet wired. See `docs/agent/handoff-2026-05-03.md` Track 3 to resume.
 - [ ] PDF export stub
 
 ## Security

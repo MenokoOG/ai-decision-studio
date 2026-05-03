@@ -3,10 +3,19 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "src/index.ts",
   "scripts": {
     "lint": "echo 'lint pending'",
     "format": "echo 'format pending'",
-    "typecheck": "echo 'typecheck pending'",
-    "test": "echo 'tests pending'"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx src/excel.test.ts"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
   }
 }

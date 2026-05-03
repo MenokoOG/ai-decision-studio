@@ -1,88 +1,12 @@
-type InitiativeSummary = {
-    id: string;
-    title: string;
-    summary: string;
-    owner: string;
-    phase: string;
-    updatedAt: string;
-};
+import {
+    type BusinessCaseWorksheetLine,
+    type InitiativeExportInput,
+    type ReadinessItem,
+    readinessStatusLabel,
+    sanitizeFileSegment,
+} from './types.js';
 
-type BusinessCaseAssumptions = {
-    baselineAnnualCost: number;
-    horizonYears: number;
-    worksheet: {
-        costRows: BusinessCaseWorksheetLine[];
-        benefitRows: BusinessCaseWorksheetLine[];
-        mitigationRows: BusinessCaseWorksheetLine[];
-    };
-};
-
-type BusinessCaseWorksheetLine = {
-    key: string;
-    label: string;
-    description: string;
-    oneTime: number;
-    annual: number;
-};
-
-type BusinessCasePreview = {
-    totalCostOfOwnership: number;
-    totalBenefit: number;
-    netValue: number;
-    netAnnualBenefit: number;
-    roiPercent: number | null;
-    paybackMonths: number | null;
-};
-
-type DecisionMatrixOption = {
-    optionName: string;
-    costScore: number;
-    benefitScore: number;
-    riskScore: number;
-    fitScore: number;
-    totalScore: number;
-    recommendation: string;
-    rationale?: string;
-};
-
-type DecisionMatrixWorkspace = {
-    options: DecisionMatrixOption[];
-};
-
-type RoadmapPhase = {
-    phaseNumber: number;
-    title: string;
-    lane: string;
-    deliverables: string;
-    startDate: string | null;
-    endDate: string | null;
-};
-
-type RoadmapWorkspace = {
-    phases: RoadmapPhase[];
-};
-
-type ReadinessItem = {
-    key: string;
-    label: string;
-    status: 'unknown' | 'draft' | 'ready';
-    notes?: string;
-};
-
-type ReadinessWorkspace = {
-    confidenceScore: number | null;
-    items: ReadinessItem[];
-};
-
-export interface MarkdownExportInput {
-    initiative: InitiativeSummary;
-    assumptions: BusinessCaseAssumptions;
-    preview: BusinessCasePreview;
-    decisionMatrix: DecisionMatrixWorkspace;
-    roadmap: RoadmapWorkspace;
-    readiness?: ReadinessWorkspace;
-    exportedAt?: string;
-}
+export type MarkdownExportInput = InitiativeExportInput;
 
 export interface MarkdownExportDocument {
     fileName: string;
@@ -121,28 +45,12 @@ function asDate(value: string | null) {
     return value.slice(0, 10);
 }
 
-function sanitizeFileSegment(value: string) {
-    return value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 80);
-}
-
 function escapeCell(value: string) {
     return value.replace(/\|/g, '\\|').replace(/\n/g, '<br/>');
 }
 
 function asReadinessStatus(value: ReadinessItem['status']) {
-    if (value === 'ready') {
-        return 'Ready';
-    }
-
-    if (value === 'draft') {
-        return 'Draft';
-    }
-
-    return 'Unknown';
+    return readinessStatusLabel(value);
 }
 
 function buildWorksheetRows(rows: BusinessCaseWorksheetLine[]) {

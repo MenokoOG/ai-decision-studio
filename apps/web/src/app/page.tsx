@@ -5,6 +5,7 @@ import { Calculator, Compass, Gauge, Layers3, Loader2, ShieldCheck, Sparkles } f
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SectionForm, type SectionStatus } from '@/components/section-form';
 import {
   createDefaultBusinessCaseInput,
   type BusinessCasePreviewInput,
@@ -31,6 +32,7 @@ type BusinessCasePreviewResult = {
 };
 
 type WorkflowScreen =
+  | 'launcher'
   | 'quick-estimate'
   | 'scope'
   | 'costs'
@@ -130,7 +132,7 @@ export default function HomePage() {
   const [preview, setPreview] = useState<BusinessCasePreviewResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeScreen, setActiveScreen] = useState<WorkflowScreen>('quick-estimate');
+  const [activeScreen, setActiveScreen] = useState<WorkflowScreen>('launcher');
   const [quickBaseline, setQuickBaseline] = useState(220000);
   const [quickReductionPercent, setQuickReductionPercent] = useState(18);
   const [quickOneTime, setQuickOneTime] = useState(120000);
@@ -551,6 +553,71 @@ export default function HomePage() {
     };
   }, [readiness]);
 
+  const sectionStatus: Record<Exclude<WorkflowScreen, 'launcher'>, SectionStatus> = useMemo(() => {
+    const anyRowFilled = (rows: BusinessCasePreviewInput['worksheet']['costRows']) =>
+      rows.some((row) => row.oneTime > 0 || row.annual > 0);
+
+    return {
+      'quick-estimate':
+        quickBaseline > 0 || quickOneTime > 0 || quickAnnualRun > 0 ? 'ready' : 'unknown',
+      scope:
+        input.baselineAnnualCost > 0 && input.horizonYears > 0
+          ? 'ready'
+          : input.baselineAnnualCost > 0 || input.horizonYears > 0
+            ? 'draft'
+            : 'unknown',
+      costs: anyRowFilled(input.worksheet.costRows) ? 'ready' : 'unknown',
+      benefits: anyRowFilled(input.worksheet.benefitRows) ? 'ready' : 'unknown',
+      risks: anyRowFilled(input.worksheet.mitigationRows) ? 'ready' : 'unknown',
+      readiness:
+        readinessStats.readyCount > 0
+          ? 'ready'
+          : readinessStats.draftCount > 0
+            ? 'draft'
+            : 'unknown',
+      summary: preview ? 'ready' : 'unknown',
+    };
+  }, [input, preview, quickAnnualRun, quickBaseline, quickOneTime, readinessStats]);
+
+  const closeToLauncher = () => setActiveScreen('launcher');
+
+  const clearScope = () =>
+    setInput((previous) => ({
+      ...previous,
+      baselineAnnualCost: 0,
+      horizonYears: 1,
+    }));
+
+  const clearWorksheetSection = (section: WorksheetSectionId) =>
+    setInput((previous) => {
+      const key =
+        section === 'cost' ? 'costRows' : section === 'benefit' ? 'benefitRows' : 'mitigationRows';
+      return {
+        ...previous,
+        worksheet: {
+          ...previous.worksheet,
+          [key]: previous.worksheet[key].map((row) => ({ ...row, oneTime: 0, annual: 0 })),
+        },
+      };
+    });
+
+  const clearReadiness = () => setReadiness(createDefaultReadinessState());
+
+  const clearQuickEstimate = () => {
+    setQuickBaseline(0);
+    setQuickReductionPercent(0);
+    setQuickOneTime(0);
+    setQuickAnnualRun(0);
+    setQuickHorizon(3);
+    setMonthlyActiveUsers(0);
+    setRequestsPerUserPerMonth(0);
+    setAvgPromptTokens(0);
+    setAvgCompletionTokens(0);
+    setApiCostPer1kTokens(0);
+  };
+
+  const clearSummary = () => setPreview(null);
+
   const workflowScreens: Array<{ id: WorkflowScreen; label: string; tip: string }> = [
     {
       id: 'quick-estimate',
@@ -878,34 +945,54 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-        <h2 className="text-lg font-semibold">Guided Workflow</h2>
-        <p className="mt-1 text-sm text-slate-300">
-          Use the buttons to open one screen at a time. This keeps the UI clean while exposing every
-          field needed for informed decisions.
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {workflowScreens.map((screen, index) => (
-            <button
-              key={screen.id}
-              type="button"
-              onClick={() => setActiveScreen(screen.id)}
-              className={`rounded-xl border p-3 text-left transition ${
-                activeScreen === screen.id
-                  ? 'border-cyan-300/70 bg-cyan-500/15 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]'
-                  : 'border-white/10 bg-slate-950/30 hover:border-white/25 hover:bg-slate-900/40'
-              }`}
-            >
-              <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                Step {index + 1}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-100">{screen.label}</p>
-              <p className="mt-1 text-xs text-slate-400">{screen.tip}</p>
-            </button>
-          ))}
-        </div>
-      </section>
+      {activeScreen === 'launcher' ? (
+        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+          <h2 className="text-lg font-semibold">Workspace Launcher</h2>
+          <p className="mt-1 text-sm text-slate-300">
+            Open one section at a time, complete it, and close back to this hub. Status pills show
+            what is started, in progress, and ready.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {workflowScreens.map((screen, index) => {
+              const status = sectionStatus[screen.id as Exclude<WorkflowScreen, 'launcher'>];
+              const pillClass =
+                status === 'ready'
+                  ? 'border-emerald-300/40 bg-emerald-500/10 text-emerald-100'
+                  : status === 'draft'
+                    ? 'border-amber-300/40 bg-amber-500/10 text-amber-100'
+                    : 'border-slate-300/30 bg-slate-700/20 text-slate-200';
+              const pillLabel =
+                status === 'ready' ? 'Ready' : status === 'draft' ? 'Draft' : 'Not started';
+              return (
+                <button
+                  key={screen.id}
+                  type="button"
+                  onClick={() => setActiveScreen(screen.id)}
+                  className="group rounded-xl border border-white/10 bg-slate-950/30 p-3 text-left transition hover:border-white/25 hover:bg-slate-900/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      Step {index + 1}
+                    </p>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${pillClass}`}
+                    >
+                      {pillLabel}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-semibold text-slate-100">{screen.label}</p>
+                  <p className="mt-1 text-xs text-slate-400">{screen.tip}</p>
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-200/80 group-hover:text-cyan-100">
+                    Open &rarr;
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
+      {activeScreen === 'launcher' ? (
       <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">Use Cases</h2>
         <p className="mt-1 text-sm text-slate-300">
@@ -933,7 +1020,9 @@ export default function HomePage() {
           </article>
         </div>
       </section>
+      ) : null}
 
+      {activeScreen === 'launcher' ? (
       <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">Help: How To Use This App</h2>
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -972,21 +1061,23 @@ export default function HomePage() {
           only. Running totals are cumulative year-over-year.
         </div>
       </section>
+      ) : null}
 
       {activeScreen === 'quick-estimate' ? (
-        <section
-          id="calculators"
-          className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm"
+        <SectionForm
+          title="Quick Estimate"
+          description="Rough what-if analysis before completing worksheet details. This is the first calculator section."
+          icon={<Calculator className="size-5" />}
+          status={sectionStatus['quick-estimate']}
+          onSave={() => void saveWorkspaceDraft()}
+          onCalculate={calculate}
+          onClear={clearQuickEstimate}
+          onClose={closeToLauncher}
+          isSaving={isSavingDraft}
+          isCalculating={isCalculating}
+          clearConfirmMessage="Reset all quick-estimate inputs to zero?"
         >
-          <div className="flex items-center gap-2">
-            <Calculator className="size-5" />
-            <h3 className="text-lg font-semibold">Calculator Zone: Quick Estimate</h3>
-          </div>
-          <p className="mt-1 text-sm text-slate-300">
-            Use this for rough what-if analysis before completing worksheet details. This is the
-            first calculator section.
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div id="calculators" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="text-sm text-slate-200">
               Current annual spend
               <input
@@ -1203,16 +1294,24 @@ export default function HomePage() {
               </div>
             </dl>
           </div>
-        </section>
+        </SectionForm>
       ) : null}
 
       {activeScreen === 'scope' ? (
-        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold">Scope & Baseline</h3>
-          <p className="mt-1 text-sm text-slate-300">
-            Set your baseline first so downstream cost and value projections stay grounded.
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <SectionForm
+          title="Scope & Baseline"
+          description="Set your baseline first so downstream cost and value projections stay grounded."
+          icon={<Compass className="size-5" />}
+          status={sectionStatus.scope}
+          onSave={() => void saveWorkspaceDraft()}
+          onCalculate={calculate}
+          onClear={clearScope}
+          onClose={closeToLauncher}
+          isSaving={isSavingDraft}
+          isCalculating={isCalculating}
+          clearConfirmMessage="Reset baseline cost and horizon to defaults?"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm text-slate-200">
               Baseline annual cost
               <input
@@ -1239,83 +1338,122 @@ export default function HomePage() {
               </span>
             </label>
           </div>
-        </section>
+        </SectionForm>
       ) : null}
 
       {activeScreen === 'costs' || activeScreen === 'benefits' || activeScreen === 'risks' ? (
-        <section className="mt-6 grid gap-4 xl:grid-cols-3">
-          {sections
-            .filter((section) => {
-              if (activeScreen === 'costs') return section.id === 'cost';
-              if (activeScreen === 'benefits') return section.id === 'benefit';
-              return section.id === 'mitigation';
-            })
-            .map((section) => (
-              <article
-                key={section.id}
-                className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 xl:col-span-3"
-              >
-                <h3 className="text-base font-semibold">{section.title}</h3>
-                <p className="mt-1 text-sm text-slate-300">{section.subtitle}</p>
-                <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs text-amber-100">
-                  Enter Year 1 setup spend under one-time, then steady-state spend/value under
-                  annual.
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {section.rows.map((row, index) => (
-                    <div
-                      key={row.key}
-                      className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
-                    >
-                      <p className="text-sm font-medium text-slate-100">{row.label}</p>
-                      <p className="mt-1 text-xs text-slate-400">{row.description}</p>
-                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <label className="text-xs text-slate-400">
-                          One-time
-                          <input
-                            className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
-                            inputMode="decimal"
-                            value={row.oneTime}
-                            onChange={(event) =>
-                              setLine(section.id, index, 'oneTime', event.target.value)
-                            }
-                          />
-                          <span className="mt-1 block text-[11px] text-slate-500">
-                            Used in Year 1 only.
-                          </span>
-                        </label>
-                        <label className="text-xs text-slate-400">
-                          Annual (Year 2+)
-                          <input
-                            className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
-                            inputMode="decimal"
-                            value={row.annual}
-                            onChange={(event) =>
-                              setLine(section.id, index, 'annual', event.target.value)
-                            }
-                          />
-                          <span className="mt-1 block text-[11px] text-slate-500">
-                            Repeats every year after Year 1.
-                          </span>
-                        </label>
+        (() => {
+          const sectionId: WorksheetSectionId =
+            activeScreen === 'costs' ? 'cost' : activeScreen === 'benefits' ? 'benefit' : 'mitigation';
+          const screenMeta = {
+            costs: {
+              title: 'Implementation Costs',
+              description:
+                'Capture one-time and annual costs for the full delivery footprint.',
+              clearMessage: 'Zero out all cost rows? Row labels stay; only values reset.',
+            },
+            benefits: {
+              title: 'Business Benefits',
+              description:
+                'Estimate measurable savings, productivity, and differentiation value.',
+              clearMessage: 'Zero out all benefit rows? Row labels stay; only values reset.',
+            },
+            risks: {
+              title: 'Risk Mitigations',
+              description:
+                'Budget explicit risk controls before finalizing investment decisions.',
+              clearMessage: 'Zero out all mitigation rows? Row labels stay; only values reset.',
+            },
+          }[activeScreen];
+          return (
+            <SectionForm
+              title={screenMeta.title}
+              description={screenMeta.description}
+              icon={<Layers3 className="size-5" />}
+              status={sectionStatus[activeScreen]}
+              onSave={() => void saveWorkspaceDraft()}
+              onCalculate={calculate}
+              onClear={() => clearWorksheetSection(sectionId)}
+              onClose={closeToLauncher}
+              isSaving={isSavingDraft}
+              isCalculating={isCalculating}
+              clearConfirmMessage={screenMeta.clearMessage}
+            >
+              <div className="grid gap-4">
+                {sections
+                  .filter((section) => section.id === sectionId)
+                  .map((section) => (
+                    <article key={section.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-sm text-slate-300">{section.subtitle}</p>
+                      <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs text-amber-100">
+                        Enter Year 1 setup spend under one-time, then steady-state spend/value
+                        under annual.
                       </div>
-                    </div>
+
+                      <div className="mt-4 space-y-3">
+                        {section.rows.map((row, index) => (
+                          <div
+                            key={row.key}
+                            className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
+                          >
+                            <p className="text-sm font-medium text-slate-100">{row.label}</p>
+                            <p className="mt-1 text-xs text-slate-400">{row.description}</p>
+                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              <label className="text-xs text-slate-400">
+                                One-time
+                                <input
+                                  className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
+                                  inputMode="decimal"
+                                  value={row.oneTime}
+                                  onChange={(event) =>
+                                    setLine(section.id, index, 'oneTime', event.target.value)
+                                  }
+                                />
+                                <span className="mt-1 block text-[11px] text-slate-500">
+                                  Used in Year 1 only.
+                                </span>
+                              </label>
+                              <label className="text-xs text-slate-400">
+                                Annual (Year 2+)
+                                <input
+                                  className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
+                                  inputMode="decimal"
+                                  value={row.annual}
+                                  onChange={(event) =>
+                                    setLine(section.id, index, 'annual', event.target.value)
+                                  }
+                                />
+                                <span className="mt-1 block text-[11px] text-slate-500">
+                                  Repeats every year after Year 1.
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
                   ))}
-                </div>
-              </article>
-            ))}
-        </section>
+              </div>
+            </SectionForm>
+          );
+        })()
       ) : null}
 
       {activeScreen === 'readiness' ? (
-        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold">AI Cost Readiness Checklist</h3>
-          <p className="mt-1 text-sm text-slate-300">
-            Make hidden cost and execution complexity visible early. Mark each item as Unknown,
-            Draft, or Ready.
-          </p>
-          <p className="mt-2 text-xs text-slate-400">
+        <SectionForm
+          title="AI Cost Readiness Checklist"
+          description="Make hidden cost and execution complexity visible early. Mark each item as Unknown, Draft, or Ready."
+          icon={<ShieldCheck className="size-5" />}
+          status={sectionStatus.readiness}
+          onSave={() => void saveWorkspaceDraft()}
+          onCalculate={calculate}
+          onClear={clearReadiness}
+          onClose={closeToLauncher}
+          isSaving={isSavingDraft}
+          isCalculating={isCalculating}
+          clearConfirmMessage="Reset every readiness item back to Unknown?"
+        >
+          <p className="text-xs text-slate-400">
             Unknown = not assessed yet, Draft = in progress, Ready = validated with owner and
             evidence.
           </p>
@@ -1395,13 +1533,23 @@ export default function HomePage() {
               );
             })}
           </div>
-        </section>
+        </SectionForm>
       ) : null}
 
       {activeScreen === 'summary' ? (
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <SectionForm
+          title="Decision Summary"
+          description="Deterministic outputs from worksheet inputs. No AI guesswork in the numbers."
+          icon={<Gauge className="size-5" />}
+          status={sectionStatus.summary}
+          onCalculate={calculate}
+          onClear={clearSummary}
+          onClose={closeToLauncher}
+          isCalculating={isCalculating}
+          clearConfirmMessage="Clear the calculated summary? Inputs are not affected."
+        >
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <div className="rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-            <h2 className="text-lg font-semibold">Decision Summary</h2>
             <p className="mt-1 text-sm text-slate-300">
               Deterministic outputs from worksheet inputs. No AI guesswork in the numbers.
             </p>
@@ -1492,24 +1640,27 @@ export default function HomePage() {
               </div>
             </CardContent>
           </Card>
-        </section>
+          </div>
+        </SectionForm>
       ) : null}
 
-      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-        <h2 className="text-lg font-semibold">Recalculate From Here</h2>
-        <p className="mt-1 text-sm text-slate-300">
-          You do not need to scroll back up. Use this button anytime after editing fields.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button className="gap-2" onClick={calculate} disabled={isCalculating}>
-            <Sparkles className="size-4" />
-            {isCalculating ? 'Calculating...' : 'Calculate Business Case'}
-          </Button>
-          <Button variant="outline" onClick={() => setActiveScreen('summary')}>
-            Open Decision Summary
-          </Button>
-        </div>
-      </section>
+      {activeScreen === 'launcher' ? (
+        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+          <h2 className="text-lg font-semibold">Recalculate From Here</h2>
+          <p className="mt-1 text-sm text-slate-300">
+            You do not need to scroll back up. Use this button anytime after editing fields.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button className="gap-2" onClick={calculate} disabled={isCalculating}>
+              <Sparkles className="size-4" />
+              {isCalculating ? 'Calculating...' : 'Calculate Business Case'}
+            </Button>
+            <Button variant="outline" onClick={() => setActiveScreen('summary')}>
+              Open Decision Summary
+            </Button>
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }
