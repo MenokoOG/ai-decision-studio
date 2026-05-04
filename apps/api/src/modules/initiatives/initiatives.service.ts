@@ -1,5 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { TextEncoder } from 'node:util';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateInitiativeDto } from './dto/create-initiative.dto.js';
@@ -10,6 +11,51 @@ import type { UpdateInitiativeDto } from './dto/update-initiative.dto.js';
 
 type ReadinessStatus = 'unknown' | 'draft' | 'ready';
 type ReadinessMap = Record<string, { status?: string }>;
+type WorksheetLine = {
+    key: string;
+    label: string;
+    description: string;
+    oneTime: number;
+    annual: number;
+};
+
+type InitiativeExportInput = {
+    initiative: {
+        id: string;
+        title: string;
+        summary: string;
+        owner: string;
+        phase: string;
+        updatedAt: string;
+    };
+    assumptions: {
+        baselineAnnualCost: number;
+        horizonYears: number;
+        worksheet: {
+            costRows: WorksheetLine[];
+            benefitRows: WorksheetLine[];
+            mitigationRows: WorksheetLine[];
+        };
+    };
+    preview: {
+        totalCostOfOwnership: number;
+        totalBenefit: number;
+        netValue: number;
+        netAnnualBenefit: number;
+        roiPercent: number | null;
+        paybackMonths: number | null;
+    };
+    readiness?: {
+        confidenceScore: number | null;
+        items: Array<{
+            key: string;
+            label: string;
+            status: ReadinessStatus;
+            notes?: string;
+        }>;
+    };
+    exportedAt?: string;
+};
 
 function scoreReadiness(readiness: ReadinessMap) {
     const statuses = Object.values(readiness).map((item) => item?.status ?? 'unknown');
@@ -380,6 +426,203 @@ export class InitiativesService {
         return {
             deleted: true,
             id,
+        };
+    }
+
+    private sanitizeSegment(value: string) {
+        return value
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 80);
+    }
+
+    private asNumber(value: unknown) {
+        return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    }
+
+    private asWorksheetLineArray(value: unknown): WorksheetLine[] {
+        if (!Array.isArray(value)) return [];
+        return value.map((row, index) => {
+            const item = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
+            return {
+                key: String(item.key ?? `row-${index + 1}`),
+                label: String(item.label ?? ''),
+                description: String(item.description ?? ''),
+                oneTime: this.asNumber(item.oneTime),
+                annual: this.asNumber(item.annual),
+            };
+        });
+    }
+
+    private escapeCsv(value: unknown) {
+        const text = String(value ?? '');
+        if (!text.includes(',') && !text.includes('"') && !text.includes('\n')) {
+            return text;
+        }
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    private async buildExportInput(id: string): Promise<InitiativeExportInput> {
+        const initiative = await this.getById(id);
+        const stateResult = await this.getWorkspaceState(id);
+        const snapshotsResult = await this.listSnapshots(id);
+        const latestSnapshot = snapshotsResult.snapshots[0] as
+            | { snapshot?: { result?: unknown } }
+            | undefined;
+        const preview = (latestSnapshot?.snapshot?.result ?? {
+            totalCostOfOwnership: 0,
+            totalBenefit: 0,
+            netValue: 0,
+            netAnnualBenefit: 0,
+            roiPercent: 0,
+            paybackMonths: null,
+        }) as InitiativeExportInput['preview'];
+        const rawState = (stateResult.state ?? {}) as Record<string, unknown>;
+        const workspaceInput = (rawState.input ?? {}) as Record<string, unknown>;
+        const worksheet =
+            workspaceInput.worksheet && typeof workspaceInput.worksheet === 'object'
+                ? (workspaceInput.worksheet as Record<string, unknown>)
+                : {};
+        const assumptions = {
+            baselineAnnualCost: this.asNumber(workspaceInput.baselineAnnualCost),
+            horizonYears: this.asNumber(workspaceInput.horizonYears),
+            worksheet: {
+                costRows: this.asWorksheetLineArray(worksheet.costRows),
+                benefitRows: this.asWorksheetLineArray(worksheet.benefitRows),
+                mitigationRows: this.asWorksheetLineArray(worksheet.mitigationRows),
+            },
+        };
+        const readinessRaw = (rawState['readiness'] ?? {}) as Record<
+            string,
+            { status?: string }
+        >;
+        const readinessItems = Object.entries(readinessRaw).map(([key, value]) => ({
+            key,
+            label: key,
+            status: (value?.status ?? 'unknown') as 'unknown' | 'draft' | 'ready',
+        }));
+        const confidenceResult = scoreReadiness(readinessRaw);
+
+        return {
+            initiative: {
+                id: initiative.id,
+                title: initiative.title,
+                summary: initiative.summary ?? '',
+                owner: initiative.owner ?? '',
+                phase: initiative.phase ?? 'DISCOVERY',
+                updatedAt: initiative.updatedAt.toISOString(),
+            },
+            assumptions,
+            preview,
+            readiness: {
+                confidenceScore: confidenceResult.confidenceScore,
+                items: readinessItems,
+            },
+            exportedAt: new Date().toISOString(),
+        };
+    }
+
+    async exportExcel(id: string) {
+        const input = await this.buildExportInput(id);
+        const exportedAt = input.exportedAt ?? new Date().toISOString();
+        const datePart = exportedAt.slice(0, 10);
+        const slug = this.sanitizeSegment(input.initiative.title) || 'initiative';
+        const fileName = `${slug}-${datePart}.csv`;
+
+        const rows: string[][] = [
+            ['Section', 'Field', 'Value'],
+            ['Initiative', 'Title', input.initiative.title],
+            ['Initiative', 'Summary', input.initiative.summary],
+            ['Initiative', 'Owner', input.initiative.owner],
+            ['Initiative', 'Phase', input.initiative.phase],
+            ['Initiative', 'Last Updated', input.initiative.updatedAt],
+            ['Business Case', 'Baseline Annual Cost', input.assumptions.baselineAnnualCost.toString()],
+            ['Business Case', 'Horizon Years', input.assumptions.horizonYears.toString()],
+            ['Outputs', 'Total Cost of Ownership', input.preview.totalCostOfOwnership.toString()],
+            ['Outputs', 'Total Benefit', input.preview.totalBenefit.toString()],
+            ['Outputs', 'Net Value', input.preview.netValue.toString()],
+            ['Outputs', 'Net Annual Benefit', input.preview.netAnnualBenefit.toString()],
+            ['Outputs', 'ROI Percent', input.preview.roiPercent?.toString() ?? ''],
+            ['Outputs', 'Payback Months', input.preview.paybackMonths?.toString() ?? ''],
+            ['Readiness', 'Confidence Score', input.readiness?.confidenceScore?.toString() ?? ''],
+        ];
+
+        for (const item of input.readiness?.items ?? []) {
+            rows.push(['Readiness Item', item.label, item.status]);
+        }
+
+        for (const row of input.assumptions.worksheet.costRows) {
+            rows.push(['Cost Row', row.label, `${row.oneTime}|${row.annual}|${row.description}`]);
+        }
+
+        for (const row of input.assumptions.worksheet.benefitRows) {
+            rows.push(['Benefit Row', row.label, `${row.oneTime}|${row.annual}|${row.description}`]);
+        }
+
+        for (const row of input.assumptions.worksheet.mitigationRows) {
+            rows.push(['Mitigation Row', row.label, `${row.oneTime}|${row.annual}|${row.description}`]);
+        }
+
+        const csv = rows
+            .map((row) => row.map((value) => this.escapeCsv(value)).join(','))
+            .join('\n');
+
+        return {
+            fileName,
+            buffer: new TextEncoder().encode(csv),
+        };
+    }
+
+    async exportMarkdown(id: string) {
+        const input = await this.buildExportInput(id);
+        const exportedAt = input.exportedAt ?? new Date().toISOString();
+        const datePart = exportedAt.slice(0, 10);
+        const slug = this.sanitizeSegment(input.initiative.title) || 'initiative';
+        const fileName = `${slug}-${datePart}.md`;
+
+        const lines: string[] = [
+            `# ${input.initiative.title}`,
+            '',
+            `- Initiative ID: ${input.initiative.id}`,
+            `- Owner: ${input.initiative.owner || 'n/a'}`,
+            `- Phase: ${input.initiative.phase}`,
+            `- Last Updated: ${input.initiative.updatedAt}`,
+            `- Exported At: ${exportedAt}`,
+            '',
+            '## Summary',
+            '',
+            input.initiative.summary || 'No summary provided.',
+            '',
+            '## Business Case Inputs',
+            '',
+            `- Baseline Annual Cost: ${input.assumptions.baselineAnnualCost}`,
+            `- Horizon Years: ${input.assumptions.horizonYears}`,
+            '',
+            '## Outputs',
+            '',
+            `- Total Cost of Ownership: ${input.preview.totalCostOfOwnership}`,
+            `- Total Benefit: ${input.preview.totalBenefit}`,
+            `- Net Value: ${input.preview.netValue}`,
+            `- Net Annual Benefit: ${input.preview.netAnnualBenefit}`,
+            `- ROI Percent: ${input.preview.roiPercent ?? 'n/a'}`,
+            `- Payback Months: ${input.preview.paybackMonths ?? 'n/a'}`,
+            '',
+            '## Readiness',
+            '',
+            `- Confidence Score: ${input.readiness?.confidenceScore ?? 0}`,
+        ];
+
+        if ((input.readiness?.items.length ?? 0) > 0) {
+            lines.push('', '| Category | Status |', '|---|---|');
+            for (const item of input.readiness?.items ?? []) {
+                lines.push(`| ${item.label} | ${item.status} |`);
+            }
+        }
+
+        return {
+            fileName,
+            content: lines.join('\n'),
         };
     }
 }

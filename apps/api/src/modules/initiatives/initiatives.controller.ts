@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CreateInitiativeDto } from './dto/create-initiative.dto.js';
@@ -89,5 +89,28 @@ export class InitiativesController {
   @ApiOperation({ summary: 'Delete initiative workspace and related records.' })
   remove(@Param('id') id: string) {
     return this.initiativesService.remove(id);
+  }
+
+  @Get(':id/export/excel')
+  @ApiOperation({ summary: 'Export initiative as Excel workbook.' })
+  async exportExcel(@Param('id') id: string, @Res() res: any) {
+    const { fileName, buffer } = await this.initiativesService.exportExcel(id);
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+    });
+    res.send(buffer);
+  }
+
+  @Get(':id/export/markdown')
+  @ApiOperation({ summary: 'Export initiative as Markdown report.' })
+  async exportMarkdown(@Param('id') id: string, @Res() res: any) {
+    const doc = await this.initiativesService.exportMarkdown(id);
+    const fileName = doc.fileName ?? `initiative-${id}.md`;
+    res.set({
+      'Content-Type': 'text/markdown; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+    });
+    res.send(doc.content);
   }
 }

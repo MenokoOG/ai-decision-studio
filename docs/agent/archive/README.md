@@ -4,7 +4,7 @@ This folder stores historical handoff snapshots so the active `docs/agent` folde
 
 ## Current Active Handoff
 
-- `docs/agent/handoff-2026-05-01.md`
+- `docs/agent/handoff-2026-05-03-dinner.md`
 
 ## Archived Handoffs
 
@@ -14,6 +14,10 @@ This folder stores historical handoff snapshots so the active `docs/agent` folde
    - API/runtime stabilization, workspace persistence reliability, and UI refinement.
 3. `docs/agent/archive/handoff-2026-04-28-technical.md`
    - Deep technical baseline and next-step recommendation for first-class snapshot/readiness persistence.
+4. `docs/agent/archive/handoff-2026-05-01.md`
+   - Migration/backfill verification and first-class readiness/snapshot persistence hardening.
+5. `docs/agent/archive/handoff-2026-05-03.md`
+   - Section-form UX completion, export track status, and follow-up implementation guidance.
 
 ## Archived Follow-On Plans
 

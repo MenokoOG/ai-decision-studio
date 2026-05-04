@@ -37,3 +37,6 @@
 - Expose explicit workspace persistence feedback in web UX: always surface dirty state (`Unsaved changes` vs `All changes saved`), live autosave status (`pending`, `saving`, `saved`, `failed`), and manual save progress so users can trust initiative state durability.
 - Replace single-page section editing with section-specific form experiences opened from the main workspace and closed explicitly by users.
 - Each section form must provide core user controls at minimum: `Save`, `Calculate`, `Clear`, and `Close`.
+- Keep user-provided provider API keys client-local in web state and never persist them in shared initiative workspace drafts.
+- Add a curated in-app Cost Intelligence layer that links trusted external benchmarks (labor, infrastructure, API pricing, governance) and supports one-click worksheet row population.
+- Keep web initiative export operational with an Excel-compatible CSV fallback endpoint until full xlsx dependency/runtime parity is restored.

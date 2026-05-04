@@ -31,7 +31,7 @@
 
 ## AI
 
-- [ ] Build provider settings UI
+- [x] Build provider settings UI
 - [ ] Add OpenAI-compatible client
 - [ ] Add test connection action
 - [ ] Add guarded prompt templates
@@ -97,6 +97,8 @@
 - [x] Add section-level clear behavior guardrail (confirm before destructive clear).
 - [ ] Add mobile QA pass for section form open/close and sticky action controls.
 - [x] Added Workspace Launcher hub view with per-section status pills (Ready / Draft / Not started) and `launcher` as the new default workflow screen; ancillary Use Cases and Help blocks now render only on the launcher so section forms stay focused.
+- [x] Added Provider Studio UI in web app quick-estimate flow with BYO OpenAI-compatible mode and local-model mode, with client-side validation and draft persistence for non-secret fields (base URL + model + mode).
+- [x] Added Cost Intelligence suggestion panel in worksheet sections with searchable source references and one-click row population for cost/benefit/risk assumptions.
 - [ ] Replace desktop-first interaction path with full web initiative workflow and persistence.
 - [ ] Add provider settings and auditable AI actions through server-side app service layer.
 - [x] Apply and verify new Prisma migration in active local DB (`pnpm --filter @ai-cost-tool/db db:migrate`).
@@ -106,7 +108,7 @@
 ## Export
 
 - [x] Markdown export
-- [ ] Excel export — **scaffolded but unverified**: `packages/exporters/src/excel.ts` + `excel.test.ts` + shared `types.ts` + barrel `index.ts` written; `exceljs ^4.4.0` added to `packages/exporters/package.json`; `markdown.ts` refactored to share types. `pnpm install` was interrupted before completion, so dep is not yet in `node_modules` and nothing has been typechecked or tested. Desktop IPC parity (`exportInitiativeExcel`) and any web download surface are not yet wired. See `docs/agent/handoff-2026-05-03.md` Track 3 to resume.
+- [ ] Excel export — xlsx package scaffolding exists in `packages/exporters`, but web API currently serves an Excel-compatible CSV fallback from initiatives endpoints to keep runtime stable when `exceljs` is unavailable.
 - [ ] PDF export stub
 
 ## Security

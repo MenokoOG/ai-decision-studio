@@ -3,25 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --background: 224 37% 9%;
-  --foreground: 220 45% 96%;
-  --card: 223 34% 14%;
-  --card-foreground: 220 45% 96%;
-  --popover: 223 34% 14%;
-  --popover-foreground: 220 45% 96%;
-  --primary: 232 100% 68%;
-  --primary-foreground: 220 45% 98%;
-  --secondary: 220 30% 20%;
-  --secondary-foreground: 220 45% 96%;
-  --muted: 221 24% 21%;
-  --muted-foreground: 220 16% 74%;
-  --accent: 223 44% 24%;
-  --accent-foreground: 220 45% 96%;
+  --background: 262 32% 7%;
+  --foreground: 260 45% 96%;
+  --card: 262 28% 12%;
+  --card-foreground: 260 45% 96%;
+  --popover: 262 28% 12%;
+  --popover-foreground: 260 45% 96%;
+  --primary: 272 85% 63%;
+  --primary-foreground: 262 45% 98%;
+  --secondary: 265 30% 18%;
+  --secondary-foreground: 260 45% 96%;
+  --muted: 263 22% 19%;
+  --muted-foreground: 262 18% 72%;
+  --accent: 270 55% 22%;
+  --accent-foreground: 260 45% 96%;
   --destructive: 0 74% 42%;
-  --destructive-foreground: 220 45% 98%;
-  --border: 219 30% 25%;
-  --input: 219 30% 25%;
-  --ring: 232 100% 68%;
+  --destructive-foreground: 262 45% 98%;
+  --border: 265 32% 22%;
+  --input: 265 32% 22%;
+  --ring: 272 85% 63%;
   --radius: 1rem;
   color-scheme: dark;
 }
@@ -54,10 +54,10 @@ body {
   margin: 0;
   padding: 0;
   background:
-    radial-gradient(1000px 540px at 12% -8%, rgba(35, 88, 180, 0.45) 0%, transparent 62%),
-    radial-gradient(880px 500px at 92% -20%, rgba(10, 176, 148, 0.26) 0%, transparent 60%),
-    linear-gradient(180deg, #090f1f 0%, #101a35 55%, #0f1f2e 100%);
-  color: #f8fafc;
+    radial-gradient(1000px 540px at 12% -8%, rgba(120, 40, 220, 0.4) 0%, transparent 62%),
+    radial-gradient(880px 500px at 92% -20%, rgba(200, 40, 180, 0.22) 0%, transparent 60%),
+    linear-gradient(180deg, #0e0814 0%, #130b1e 55%, #100b1a 100%);
+  color: #f5f0ff;
   font-family: 'Sora', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
 }
@@ -68,8 +68,9 @@ body::before {
   inset: -20vh -10vw;
   pointer-events: none;
   background:
-    radial-gradient(600px 320px at 20% 12%, rgba(93, 120, 255, 0.18) 0%, transparent 70%),
-    radial-gradient(500px 280px at 85% 28%, rgba(0, 205, 155, 0.12) 0%, transparent 68%);
+    radial-gradient(600px 320px at 20% 12%, rgba(139, 49, 255, 0.2) 0%, transparent 70%),
+    radial-gradient(500px 280px at 85% 28%, rgba(195, 40, 210, 0.14) 0%, transparent 68%),
+    radial-gradient(400px 260px at 55% 75%, rgba(100, 30, 180, 0.1) 0%, transparent 65%);
   filter: blur(6px);
   animation: auroraFloat 14s ease-in-out infinite;
   z-index: -1;

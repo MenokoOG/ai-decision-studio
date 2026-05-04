@@ -4,7 +4,7 @@ Use this folder for active execution context.
 
 ## Start Here (Current)
 
-1. `docs/agent/handoff-2026-05-01.md`
+1. `docs/agent/handoff-2026-05-03-dinner.md`
 2. `docs/agent/tasks.md`
 3. `docs/agent/memory.md`
 
@@ -17,3 +17,4 @@ Use this folder for active execution context.
 
 - Keep only the latest handoff in `docs/agent/`.
 - Move dated handoffs and dated follow-on plans to `docs/agent/archive/`.
+- Treat archived handoffs as reference history only.

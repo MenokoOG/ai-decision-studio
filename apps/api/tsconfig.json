@@ -12,6 +12,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "sourceMap": true,
+    "types": ["node"],
     "paths": {
       "@ai-cost-tool/calculators/src/businessCase": [
         "./../../packages/calculators/src/businessCase.ts"

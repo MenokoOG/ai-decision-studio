@@ -40,11 +40,14 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground))'
         },
         brand: {
-          50: '#f3f6ff',
-          100: '#e8eeff',
-          500: '#5b6cff',
-          700: '#3340cc',
-          900: '#1f255f'
+          50: '#f5f0ff',
+          100: '#ede0ff',
+          300: '#c084fc',
+          400: '#a855f7',
+          500: '#8b31ff',
+          600: '#7116e8',
+          700: '#5a0fc0',
+          900: '#2e0670'
         }
       },
       borderRadius: {

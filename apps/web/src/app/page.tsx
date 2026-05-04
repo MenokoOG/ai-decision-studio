@@ -1,10 +1,28 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Calculator, Compass, Gauge, Layers3, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
+import {
+  BarChart3,
+  Bot,
+  Calculator,
+  Compass,
+  Cpu,
+  Gauge,
+  Layers3,
+  Loader2,
+  LogOut,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  TrendingUp,
+  X,
+} from 'lucide-react';
 
+import { AppHeader } from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { HelpModal } from '@/components/help-modal';
 import { SectionForm, type SectionStatus } from '@/components/section-form';
 import {
   createDefaultBusinessCaseInput,
@@ -12,6 +30,13 @@ import {
   type WorksheetSectionId,
 } from '@/lib/business-case';
 import { READINESS_ITEMS, createDefaultReadinessState } from '@/lib/readiness';
+import {
+  applySuggestionToInput,
+  COST_SOURCE_SUGGESTIONS,
+  DEFAULT_PROVIDER_SETTINGS,
+  type ProviderMode,
+  validateProviderSettings,
+} from '@/lib/studio-assist';
 
 type BusinessCasePreviewResult = {
   horizonYears: number;
@@ -54,6 +79,11 @@ type InitiativeRecord = {
 type WorkspaceStatePayload = {
   input: BusinessCasePreviewInput;
   readiness: Record<string, { status: 'unknown' | 'draft' | 'ready' }>;
+  providerSettings?: {
+    mode: ProviderMode;
+    baseUrl: string;
+    model: string;
+  };
   activeScreen?: WorkflowScreen;
   quickEstimate?: {
     quickBaseline: number;
@@ -144,12 +174,26 @@ export default function HomePage() {
   const [avgCompletionTokens, setAvgCompletionTokens] = useState(600);
   const [apiCostPer1kTokens, setApiCostPer1kTokens] = useState(0.01);
   const [readiness, setReadiness] = useState(createDefaultReadinessState());
+  const [showInitiativesPanel, setShowInitiativesPanel] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [isExited, setIsExited] = useState(false);
+  const [providerMode, setProviderMode] = useState<ProviderMode>(DEFAULT_PROVIDER_SETTINGS.mode);
+  const [providerBaseUrl, setProviderBaseUrl] = useState(DEFAULT_PROVIDER_SETTINGS.baseUrl);
+  const [providerApiKey, setProviderApiKey] = useState(DEFAULT_PROVIDER_SETTINGS.apiKey);
+  const [providerModel, setProviderModel] = useState(DEFAULT_PROVIDER_SETTINGS.model);
+  const [providerValidation, setProviderValidation] = useState('Provider not validated yet.');
+  const [sourceLookupQuery, setSourceLookupQuery] = useState('');
 
   const apiV1 = (path: string) => `${apiBaseUrl || ''}/api/v1${path}`;
 
   const buildWorkspaceStatePayload = (): WorkspaceStatePayload => ({
     input,
     readiness,
+    providerSettings: {
+      mode: providerMode,
+      baseUrl: providerBaseUrl,
+      model: providerModel,
+    },
     activeScreen,
     quickEstimate: {
       quickBaseline,
@@ -178,6 +222,11 @@ export default function HomePage() {
   const applyWorkspaceState = (payload: WorkspaceStatePayload) => {
     setInput(payload.input);
     setReadiness(payload.readiness);
+    if (payload.providerSettings) {
+      setProviderMode(payload.providerSettings.mode);
+      setProviderBaseUrl(payload.providerSettings.baseUrl);
+      setProviderModel(payload.providerSettings.model);
+    }
     if (payload.activeScreen) {
       setActiveScreen(payload.activeScreen);
     }
@@ -425,6 +474,10 @@ export default function HomePage() {
     quickHorizon,
     quickOneTime,
     quickReductionPercent,
+    providerApiKey,
+    providerBaseUrl,
+    providerMode,
+    providerModel,
     readiness,
     requestsPerUserPerMonth,
     selectedInitiativeId,
@@ -455,6 +508,10 @@ export default function HomePage() {
     quickHorizon,
     quickOneTime,
     quickReductionPercent,
+    providerApiKey,
+    providerBaseUrl,
+    providerMode,
+    providerModel,
     readiness,
     requestsPerUserPerMonth,
     selectedInitiativeId,
@@ -618,41 +675,97 @@ export default function HomePage() {
 
   const clearSummary = () => setPreview(null);
 
-  const workflowScreens: Array<{ id: WorkflowScreen; label: string; tip: string }> = [
+  const providerSettings = useMemo(
+    () => ({
+      mode: providerMode,
+      baseUrl: providerBaseUrl,
+      apiKey: providerApiKey,
+      model: providerModel,
+    }),
+    [providerApiKey, providerBaseUrl, providerMode, providerModel],
+  );
+
+  const activeWorksheetSection: WorksheetSectionId | 'all' =
+    activeScreen === 'costs'
+      ? 'cost'
+      : activeScreen === 'benefits'
+        ? 'benefit'
+        : activeScreen === 'risks'
+          ? 'mitigation'
+          : 'all';
+
+  const filteredCostSuggestions = useMemo(() => {
+    const query = sourceLookupQuery.trim().toLowerCase();
+    return COST_SOURCE_SUGGESTIONS.filter((item) => {
+      const sectionMatch =
+        activeWorksheetSection === 'all' || item.section === activeWorksheetSection;
+      if (!sectionMatch) return false;
+      if (!query) return true;
+      const haystack = `${item.title} ${item.sourceName} ${item.note} ${item.rowKey}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [activeWorksheetSection, sourceLookupQuery]);
+
+  const runProviderValidation = () => {
+    const result = validateProviderSettings(providerSettings);
+    setProviderValidation(result.message);
+  };
+
+  const applyCostSuggestion = (suggestionId: string) => {
+    const suggestion = COST_SOURCE_SUGGESTIONS.find((item) => item.id === suggestionId);
+    if (!suggestion) return;
+    setInput((previous) => applySuggestionToInput(previous, suggestion));
+    setError(null);
+  };
+
+  type WorkflowScreenDef = {
+    id: WorkflowScreen;
+    label: string;
+    tip: string;
+    icon: React.ElementType;
+  };
+  const workflowScreens: WorkflowScreenDef[] = [
     {
       id: 'quick-estimate',
       label: 'Quick Estimate',
       tip: 'Run fast directional numbers before filling worksheet fields.',
+      icon: Calculator,
     },
     {
       id: 'scope',
       label: 'Scope & Baseline',
       tip: 'Define your current state and planning horizon first.',
+      icon: Compass,
     },
     {
       id: 'costs',
       label: 'Implementation Costs',
       tip: 'Capture one-time and annual costs for the full delivery footprint.',
+      icon: Layers3,
     },
     {
       id: 'benefits',
       label: 'Business Benefits',
       tip: 'Estimate measurable savings, productivity and differentiation value.',
+      icon: TrendingUp,
     },
     {
       id: 'risks',
       label: 'Risk Mitigations',
       tip: 'Budget explicit risk controls before finalizing investment decisions.',
+      icon: ShieldCheck,
     },
     {
       id: 'readiness',
       label: 'AI Cost Checklist',
       tip: 'Capture full project readiness across cost, ops, legal, and adoption.',
+      icon: Gauge,
     },
     {
       id: 'summary',
       label: 'Decision Summary',
       tip: 'Review deterministic outcomes and decision guidance.',
+      icon: BarChart3,
     },
   ];
 
@@ -740,927 +853,1135 @@ export default function HomePage() {
     }
   };
 
+  const deleteInitiative = async (id: string) => {
+    if (!window.confirm('Delete this initiative? All saved data will be permanently removed.')) {
+      return;
+    }
+    try {
+      const response = await fetch(apiV1(`/initiatives/${id}`), { method: 'DELETE' });
+      if (!response.ok) throw new Error('Could not delete initiative.');
+      if (selectedInitiativeId === id) {
+        setSelectedInitiativeId(null);
+        setInitiativeTitle('');
+        setInitiativeSummary('');
+        setInitiativeOwner('Menoko Team');
+        setInput(createDefaultBusinessCaseInput());
+        setReadiness(createDefaultReadinessState());
+        setPreview(null);
+        setConfidenceScore(null);
+        setSnapshotCount(0);
+        setActiveScreen('launcher');
+        setWorkspaceBaselineHash(null);
+        setHasUnsavedChanges(false);
+        setAutosaveStatus('idle');
+        setLastSavedAt(null);
+        setLastAutosaveAt(null);
+      }
+      await loadInitiatives();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete initiative.');
+    }
+  };
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportExcel = async () => {
+    if (!selectedInitiativeId) return;
+    try {
+      const response = await fetch(apiV1(`/initiatives/${selectedInitiativeId}/export/excel`));
+      if (!response.ok) throw new Error('Export failed.');
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') ?? '';
+      const match = /filename="?([^";\n]+)"?/.exec(disposition);
+      const fileName = match?.[1] ?? `initiative-${selectedInitiativeId}.csv`;
+      downloadBlob(blob, fileName);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed.');
+    }
+  };
+
+  const exportMarkdown = async () => {
+    if (!selectedInitiativeId) return;
+    try {
+      const response = await fetch(apiV1(`/initiatives/${selectedInitiativeId}/export/markdown`));
+      if (!response.ok) throw new Error('Export failed.');
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') ?? '';
+      const match = /filename="?([^";\n]+)"?/.exec(disposition);
+      const fileName = match?.[1] ?? `initiative-${selectedInitiativeId}.md`;
+      downloadBlob(blob, fileName);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed.');
+    }
+  };
+
+  const handleExit = () => {
+    if (typeof window !== 'undefined') {
+      window.close();
+      // window.close() only works when the page was opened by script.
+      // Fall back to showing the exited overlay.
+      setIsExited(true);
+    }
+  };
+
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="rounded-3xl border border-white/20 bg-gradient-to-br from-[#132a57]/70 via-[#142344]/70 to-[#0f2131]/70 p-6 shadow-[0_20px_80px_rgba(2,12,27,0.45)] backdrop-blur-xl sm:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-cyan-100/90">
-              Executive AI Portfolio Planning
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-5xl">
-              AI Decision Studio
-            </h1>
-            <p className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
-              by Menoko OG
-            </p>
-            <p className="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
-              Model AI initiative cost, value, and delivery risk with deterministic outputs designed
-              for executive decisions.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-cyan-300/35 bg-cyan-500/12 px-4 py-3 text-sm text-cyan-50">
-            Live API-backed financial projections
-          </div>
-        </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button className="gap-2" onClick={calculate} disabled={isCalculating}>
-            <Sparkles className="size-4" />
-            {isCalculating ? 'Calculating...' : 'Calculate Business Case'}
-          </Button>
-          <Button variant="outline" onClick={() => setActiveScreen('quick-estimate')}>
-            Open Calculators
-          </Button>
-          <Button variant="outline" onClick={() => setInput(createDefaultBusinessCaseInput())}>
-            Reset Template
-          </Button>
-          <span className="rounded-full border border-emerald-300/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100">
-            Backend connected
-          </span>
-          <span className="rounded-full border border-slate-300/30 bg-slate-700/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100">
-            {selectedInitiativeId ? 'Initiative selected' : 'No initiative selected'}
-          </span>
-          <span className="rounded-full border border-slate-300/30 bg-slate-700/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100">
-            {lastSavedAt
-              ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
-              : 'No draft saved yet'}
-          </span>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
-              hasUnsavedChanges
-                ? 'border border-amber-300/40 bg-amber-500/10 text-amber-100'
-                : 'border border-emerald-300/40 bg-emerald-500/10 text-emerald-100'
-            }`}
-          >
-            {hasUnsavedChanges ? 'Unsaved changes' : 'All changes saved'}
-          </span>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
-              autosaveStatus === 'error'
-                ? 'border border-rose-300/40 bg-rose-500/10 text-rose-100'
-                : autosaveStatus === 'saving'
-                  ? 'border border-sky-300/40 bg-sky-500/10 text-sky-100'
-                  : 'border border-slate-300/30 bg-slate-700/20 text-slate-100'
-            }`}
-          >
-            <span className="inline-flex items-center gap-2">
-              {autosaveStatus === 'saving' ? (
-                <span
-                  className="size-1.5 rounded-full bg-current animate-pulse"
-                  aria-hidden="true"
-                />
-              ) : null}
-              {autosaveLabel}
-            </span>
-          </span>
-        </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Workspace</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">
-              {selectedInitiativeId ? 'Initiative active' : 'No initiative selected'}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Readiness</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">
-              {readinessStats.completionPercent.toFixed(0)}% complete
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Confidence score</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">
-              {confidenceScore === null
-                ? 'Pending checklist data'
-                : `${confidenceScore.toFixed(1)}%`}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-[#0b1733]/65 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Snapshots</p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">
-              {snapshotCount} saved versions
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 rounded-2xl border border-sky-300/30 bg-sky-500/10 p-4 text-sm text-sky-100">
-          <p className="font-semibold">Decision-grade outputs</p>
-          <p className="mt-1">
-            Calculations remain deterministic, auditable, and aligned to worksheet parity for
-            reliable board-level discussions.
-          </p>
-        </div>
-        {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-        <h2 className="text-lg font-semibold">Project Workspace</h2>
-        <p className="mt-1 text-sm text-slate-300">
-          Create or open an initiative to persist this workflow between sessions.
-        </p>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="text-sm text-slate-200">
-            Initiative title
-            <input
-              className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-              value={initiativeTitle}
-              onChange={(event) => setInitiativeTitle(event.target.value)}
-            />
-          </label>
-          <label className="text-sm text-slate-200">
-            Owner
-            <input
-              className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-              value={initiativeOwner}
-              onChange={(event) => setInitiativeOwner(event.target.value)}
-            />
-          </label>
-          <label className="text-sm text-slate-200 sm:col-span-2">
-            Summary
-            <textarea
-              className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-              rows={2}
-              value={initiativeSummary}
-              onChange={(event) => setInitiativeSummary(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={createInitiative}>Create Initiative</Button>
-          <Button
-            variant="outline"
-            onClick={() => void saveWorkspaceDraft()}
-            disabled={isSavingDraft || !selectedInitiativeId}
-          >
-            {isSavingDraft ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" />
-                Saving draft...
-              </span>
-            ) : (
-              'Save Draft'
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => void loadInitiatives()}
-            disabled={isLoadingInitiatives}
-          >
-            {isLoadingInitiatives ? 'Refreshing...' : 'Refresh List'}
-          </Button>
-        </div>
-
-        <div className="mt-3 grid gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-3 text-xs text-slate-300 sm:grid-cols-3">
-          <p>Auto-save: every 30 seconds</p>
-          <p>
-            Confidence score: {confidenceScore === null ? 'n/a' : `${confidenceScore.toFixed(1)}%`}
-          </p>
-          <p>Snapshots saved: {snapshotCount}</p>
-        </div>
-
-        <div className="mt-4 grid gap-2">
-          {initiatives.length === 0 ? (
-            <p className="text-sm text-slate-400">
-              No initiatives yet. Create one to enable save/load.
-            </p>
-          ) : (
-            initiatives.map((initiative) => (
-              <button
-                key={initiative.id}
-                type="button"
-                className={`rounded-xl border p-3 text-left transition ${
-                  selectedInitiativeId === initiative.id
-                    ? 'border-brand-400/70 bg-brand-500/15'
-                    : 'border-white/10 bg-slate-950/30 hover:border-white/25'
-                }`}
-                onClick={() => void openInitiative(initiative)}
+    <>
+      <AppHeader
+        initiativeTitle={selectedInitiativeId ? initiativeTitle || 'Untitled' : null}
+        initiativePhase={
+          selectedInitiativeId
+            ? (initiatives.find((i) => i.id === selectedInitiativeId)?.phase ?? null)
+            : null
+        }
+        readinessPercent={readinessStats.completionPercent}
+        confidenceScore={confidenceScore}
+        snapshotCount={snapshotCount}
+        isSaving={isSavingDraft}
+        hasUnsavedChanges={hasUnsavedChanges}
+        autosaveStatus={autosaveStatus}
+        lastSavedAt={lastSavedAt}
+        isCalculating={isCalculating}
+        hasInitiative={!!selectedInitiativeId}
+        onSave={() => void saveWorkspaceDraft()}
+        onCalculate={calculate}
+        onExportExcel={() => void exportExcel()}
+        onExportMarkdown={() => void exportMarkdown()}
+        onToggleInitiativesPanel={() => setShowInitiativesPanel((v) => !v)}
+        onToggleHelp={() => setShowHelp(true)}
+        onExit={handleExit}
+      />
+      <main className="mx-auto max-w-7xl px-4 pb-12 pt-5 sm:px-6 lg:px-8">
+        {showInitiativesPanel ? (
+          <section className="mb-5 rounded-3xl border border-violet-400/20 bg-[#120920]/70 p-5 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-violet-50">Initiatives</h2>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Create a new initiative or switch to an existing one.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInitiativesPanel(false)}
+                className="text-slate-400 hover:text-slate-100"
               >
-                <p className="text-sm font-semibold text-slate-100">{initiative.title}</p>
-                <p className="mt-1 text-xs text-slate-400">Owner: {initiative.owner}</p>
-                <p className="mt-1 text-xs text-slate-400">{initiative.summary}</p>
-              </button>
-            ))
-          )}
-        </div>
-      </section>
-
-      {activeScreen === 'launcher' ? (
-        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-          <h2 className="text-lg font-semibold">Workspace Launcher</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            Open one section at a time, complete it, and close back to this hub. Status pills show
-            what is started, in progress, and ready.
-          </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {workflowScreens.map((screen, index) => {
-              const status = sectionStatus[screen.id as Exclude<WorkflowScreen, 'launcher'>];
-              const pillClass =
-                status === 'ready'
-                  ? 'border-emerald-300/40 bg-emerald-500/10 text-emerald-100'
-                  : status === 'draft'
-                    ? 'border-amber-300/40 bg-amber-500/10 text-amber-100'
-                    : 'border-slate-300/30 bg-slate-700/20 text-slate-200';
-              const pillLabel =
-                status === 'ready' ? 'Ready' : status === 'draft' ? 'Draft' : 'Not started';
-              return (
-                <button
-                  key={screen.id}
-                  type="button"
-                  onClick={() => setActiveScreen(screen.id)}
-                  className="group rounded-xl border border-white/10 bg-slate-950/30 p-3 text-left transition hover:border-white/25 hover:bg-slate-900/40"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                      Step {index + 1}
-                    </p>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${pillClass}`}
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm text-slate-200">
+                Initiative title
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2 text-sm"
+                  value={initiativeTitle}
+                  onChange={(event) => setInitiativeTitle(event.target.value)}
+                />
+              </label>
+              <label className="text-sm text-slate-200">
+                Owner
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2 text-sm"
+                  value={initiativeOwner}
+                  onChange={(event) => setInitiativeOwner(event.target.value)}
+                />
+              </label>
+              <label className="text-sm text-slate-200 sm:col-span-2">
+                Summary
+                <textarea
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2 text-sm"
+                  rows={2}
+                  value={initiativeSummary}
+                  onChange={(event) => setInitiativeSummary(event.target.value)}
+                />
+              </label>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                className="bg-violet-600 hover:bg-violet-500"
+                onClick={createInitiative}
+              >
+                Create Initiative
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void loadInitiatives()}
+                disabled={isLoadingInitiatives}
+              >
+                {isLoadingInitiatives ? 'Refreshing…' : 'Refresh'}
+              </Button>
+            </div>
+            {initiatives.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-400">
+                No initiatives yet. Create one to enable save/load.
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-2">
+                {initiatives.map((initiative) => (
+                  <div
+                    key={initiative.id}
+                    className={`flex items-start gap-2 rounded-xl border p-3 transition ${
+                      selectedInitiativeId === initiative.id
+                        ? 'border-violet-400/60 bg-violet-500/15'
+                        : 'border-white/10 bg-slate-950/30'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() => void openInitiative(initiative)}
                     >
-                      {pillLabel}
-                    </span>
+                      <p className="text-sm font-semibold text-slate-100">{initiative.title}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {initiative.owner} · {initiative.phase}
+                      </p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                        {initiative.summary}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-lg border border-rose-500/20 bg-rose-500/10 p-1.5 text-rose-300 transition hover:bg-rose-500/25 hover:text-rose-100"
+                      onClick={() => void deleteInitiative(initiative.id)}
+                      title="Delete initiative"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-slate-100">{screen.label}</p>
-                  <p className="mt-1 text-xs text-slate-400">{screen.tip}</p>
-                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-200/80 group-hover:text-cyan-100">
-                    Open &rarr;
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        {error ? (
+          <p className="mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            {error}
+          </p>
+        ) : null}
+
+        {activeScreen === 'launcher' ? (
+          <>
+            {/* KPI row */}
+            <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-violet-400/15 bg-[#120920]/65 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-violet-300/70">Workspace</p>
+                <p className="mt-1.5 truncate text-sm font-semibold text-slate-100">
+                  {selectedInitiativeId
+                    ? initiativeTitle || 'Untitled initiative'
+                    : 'No initiative selected'}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-violet-400/15 bg-[#120920]/65 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-violet-300/70">Readiness</p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {readinessStats.completionPercent.toFixed(0)}% complete
+                </p>
+              </div>
+              <div className="rounded-2xl border border-violet-400/15 bg-[#120920]/65 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-violet-300/70">Confidence</p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {confidenceScore === null ? 'Pending data' : `${confidenceScore.toFixed(1)}%`}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-violet-400/15 bg-[#120920]/65 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-violet-300/70">Snapshots</p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">{snapshotCount} saved</p>
+              </div>
+            </div>
+
+            {/* Workspace launcher step cards */}
+            <section className="rounded-3xl border border-violet-400/15 bg-[#120920]/55 p-5 backdrop-blur-sm">
+              <div>
+                <h2 className="text-lg font-semibold text-violet-50">Workspace Launcher</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Open one section at a time. Complete it, save, then close back here.
+                </p>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {workflowScreens.map((screen, index) => {
+                  const status = sectionStatus[screen.id as Exclude<WorkflowScreen, 'launcher'>];
+                  const pillClass =
+                    status === 'ready'
+                      ? 'border-emerald-300/40 bg-emerald-500/12 text-emerald-100'
+                      : status === 'draft'
+                        ? 'border-amber-300/40 bg-amber-500/12 text-amber-100'
+                        : 'border-white/15 bg-white/5 text-slate-400';
+                  const pillLabel =
+                    status === 'ready' ? 'Ready' : status === 'draft' ? 'Draft' : 'Not started';
+                  const Icon = screen.icon;
+                  return (
+                    <button
+                      key={screen.id}
+                      type="button"
+                      onClick={() => setActiveScreen(screen.id)}
+                      className="group flex flex-col rounded-2xl border border-white/10 bg-slate-950/25 p-4 text-left transition hover:border-violet-400/40 hover:bg-violet-500/8 hover:shadow-[0_0_20px_rgba(139,49,255,0.12)]"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/15 text-violet-200 group-hover:border-violet-400/40 group-hover:bg-violet-500/25">
+                          <Icon className="size-4" />
+                        </div>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${pillClass}`}
+                        >
+                          {pillLabel}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-400/70">
+                          Step {index + 1}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-100">{screen.label}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-400">{screen.tip}</p>
+                      </div>
+                      <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-300/60 transition group-hover:text-violet-200">
+                        Open &rarr;
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Use cases */}
+            <section className="mt-5 rounded-3xl border border-white/10 bg-[#120920]/40 p-5 backdrop-blur-sm">
+              <h2 className="text-base font-semibold text-slate-200">Use Cases</h2>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                <article className="rounded-2xl border border-white/8 bg-slate-950/30 p-4">
+                  <h3 className="text-sm font-semibold text-slate-100">
+                    Prioritize AI initiatives
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Compare likely value and costs before selecting what to fund first.
                   </p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
+                </article>
+                <article className="rounded-2xl border border-white/8 bg-slate-950/30 p-4">
+                  <h3 className="text-sm font-semibold text-slate-100">
+                    Plan enterprise modernization
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Model delivery risk and operational readiness across legacy integration paths.
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-white/8 bg-slate-950/30 p-4">
+                  <h3 className="text-sm font-semibold text-slate-100">
+                    Prepare board-level updates
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Share deterministic totals, payback outlook, and readiness gaps with confidence.
+                  </p>
+                </article>
+              </div>
+            </section>
+          </>
+        ) : null}
 
-      {activeScreen === 'launcher' ? (
-      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-        <h2 className="text-lg font-semibold">Use Cases</h2>
-        <p className="mt-1 text-sm text-slate-300">
-          Use this tool before committing budget, selecting architecture, or presenting AI
-          investment tradeoffs to leadership.
-        </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">Prioritize AI initiatives</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Compare likely value and costs before selecting what to fund first.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">Plan enterprise modernization</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Model delivery risk and operational readiness across legacy integration paths.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">Prepare board-level updates</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Share deterministic totals, payback outlook, and readiness gaps with confidence.
-            </p>
-          </article>
-        </div>
-      </section>
-      ) : null}
-
-      {activeScreen === 'launcher' ? (
-      <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-        <h2 className="text-lg font-semibold">Help: How To Use This App</h2>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">1. Start in Quick Estimate</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Open the Quick Estimate screen to run directional numbers and usage scaling costs
-              first.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">2. Fill Scope and Worksheet</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Enter baseline, then complete Costs, Benefits, and Risk Mitigations with one-time and
-              annual values.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">3. Track Readiness</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Mark each readiness area as Unknown, Draft, or Ready to surface delivery risk early.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h3 className="text-sm font-semibold text-slate-100">
-              4. Calculate and Review Summary
-            </h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Use Calculate to refresh deterministic totals, ROI, payback, and yearly net
-              projections.
-            </p>
-          </article>
-        </div>
-        <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-4 text-xs text-cyan-100">
-          Formula note: Year 1 includes one-time plus annual values. Years 2+ include annual values
-          only. Running totals are cumulative year-over-year.
-        </div>
-      </section>
-      ) : null}
-
-      {activeScreen === 'quick-estimate' ? (
-        <SectionForm
-          title="Quick Estimate"
-          description="Rough what-if analysis before completing worksheet details. This is the first calculator section."
-          icon={<Calculator className="size-5" />}
-          status={sectionStatus['quick-estimate']}
-          onSave={() => void saveWorkspaceDraft()}
-          onCalculate={calculate}
-          onClear={clearQuickEstimate}
-          onClose={closeToLauncher}
-          isSaving={isSavingDraft}
-          isCalculating={isCalculating}
-          clearConfirmMessage="Reset all quick-estimate inputs to zero?"
-        >
-          <div id="calculators" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="text-sm text-slate-200">
-              Current annual spend
-              <input
-                className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="decimal"
-                value={quickBaseline}
-                onChange={(event) =>
-                  setQuickBaseline(Math.max(0, parseNumeric(event.target.value)))
-                }
-              />
-              <span className="mt-1 block text-xs text-slate-400">
-                How much you spend each year today before this AI project.
-              </span>
-            </label>
-            <label className="text-sm text-slate-200">
-              Savings target (%)
-              <input
-                className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="decimal"
-                value={quickReductionPercent}
-                onChange={(event) =>
-                  setQuickReductionPercent(Math.max(0, parseNumeric(event.target.value)))
-                }
-              />
-              <span className="mt-1 block text-xs text-slate-400">
-                Percent of current spend you aim to save after rollout.
-              </span>
-            </label>
-            <label className="text-sm text-slate-200">
-              One-time investment
-              <input
-                className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="decimal"
-                value={quickOneTime}
-                onChange={(event) => setQuickOneTime(Math.max(0, parseNumeric(event.target.value)))}
-              />
-              <span className="mt-1 block text-xs text-slate-400">
-                Money you spend once to start the project.
-              </span>
-            </label>
-            <label className="text-sm text-slate-200">
-              Annual run cost
-              <input
-                className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="decimal"
-                value={quickAnnualRun}
-                onChange={(event) =>
-                  setQuickAnnualRun(Math.max(0, parseNumeric(event.target.value)))
-                }
-              />
-              <span className="mt-1 block text-xs text-slate-400">
-                Money you keep paying each year after launch.
-              </span>
-            </label>
-            <label className="text-sm text-slate-200">
-              Planning years
-              <input
-                className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="numeric"
-                value={quickHorizon}
-                onChange={(event) =>
-                  setQuickHorizon(Math.max(1, Math.trunc(parseNumeric(event.target.value) || 1)))
-                }
-              />
-              <span className="mt-1 block text-xs text-slate-400">
-                How many years you want to model in this estimate.
-              </span>
-            </label>
-          </div>
-          <dl className="mt-4 grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                Projected annual benefit
-              </dt>
-              <dd className="text-lg font-semibold">{asCurrency(quickEstimate.annualBenefit)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Total benefit</dt>
-              <dd className="text-lg font-semibold">{asCurrency(quickEstimate.totalBenefit)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Total cost</dt>
-              <dd className="text-lg font-semibold">{asCurrency(quickEstimate.totalCost)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Net impact</dt>
-              <dd className="text-lg font-semibold">{asCurrency(quickEstimate.net)}</dd>
-            </div>
-          </dl>
-
-          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-            <h4 className="text-base font-semibold">Usage Scaling Calculator</h4>
-            <p className="mt-1 text-sm text-slate-300">
-              AI behaves like metered infrastructure. Forecast usage at scale before committing
-              architecture.
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {activeScreen === 'quick-estimate' ? (
+          <SectionForm
+            title="Quick Estimate"
+            description="Rough what-if analysis before completing worksheet details. This is the first calculator section."
+            icon={<Calculator className="size-5" />}
+            status={sectionStatus['quick-estimate']}
+            onSave={() => void saveWorkspaceDraft()}
+            onCalculate={calculate}
+            onClear={clearQuickEstimate}
+            onClose={closeToLauncher}
+            isSaving={isSavingDraft}
+            isCalculating={isCalculating}
+            clearConfirmMessage="Reset all quick-estimate inputs to zero?"
+          >
+            <div id="calculators" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <label className="text-sm text-slate-200">
-                Monthly active users
-                <input
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                  inputMode="numeric"
-                  value={monthlyActiveUsers}
-                  onChange={(event) =>
-                    setMonthlyActiveUsers(Math.max(0, Math.trunc(parseNumeric(event.target.value))))
-                  }
-                />
-                <span className="mt-1 block text-xs text-slate-400">
-                  Estimated users who will use the AI feature each month.
-                </span>
-              </label>
-              <label className="text-sm text-slate-200">
-                Requests per user / month
-                <input
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                  inputMode="numeric"
-                  value={requestsPerUserPerMonth}
-                  onChange={(event) =>
-                    setRequestsPerUserPerMonth(
-                      Math.max(0, Math.trunc(parseNumeric(event.target.value))),
-                    )
-                  }
-                />
-                <span className="mt-1 block text-xs text-slate-400">
-                  Average prompts each user sends per month.
-                </span>
-              </label>
-              <label className="text-sm text-slate-200">
-                Avg prompt tokens / request
-                <input
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                  inputMode="numeric"
-                  value={avgPromptTokens}
-                  onChange={(event) =>
-                    setAvgPromptTokens(Math.max(0, Math.trunc(parseNumeric(event.target.value))))
-                  }
-                />
-                <span className="mt-1 block text-xs text-slate-400">
-                  Input token size per request before model response.
-                </span>
-              </label>
-              <label className="text-sm text-slate-200">
-                Avg completion tokens / request
-                <input
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                  inputMode="numeric"
-                  value={avgCompletionTokens}
-                  onChange={(event) =>
-                    setAvgCompletionTokens(
-                      Math.max(0, Math.trunc(parseNumeric(event.target.value))),
-                    )
-                  }
-                />
-                <span className="mt-1 block text-xs text-slate-400">
-                  Output token size generated by the model each request.
-                </span>
-              </label>
-              <label className="text-sm text-slate-200">
-                API cost per 1K tokens (USD)
+                Current annual spend
                 <input
                   className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
                   inputMode="decimal"
-                  value={apiCostPer1kTokens}
+                  value={quickBaseline}
                   onChange={(event) =>
-                    setApiCostPer1kTokens(Math.max(0, parseNumeric(event.target.value)))
+                    setQuickBaseline(Math.max(0, parseNumeric(event.target.value)))
                   }
                 />
                 <span className="mt-1 block text-xs text-slate-400">
-                  Provider price in dollars for each 1,000 tokens.
+                  How much you spend each year today before this AI project.
+                </span>
+              </label>
+              <label className="text-sm text-slate-200">
+                Savings target (%)
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                  inputMode="decimal"
+                  value={quickReductionPercent}
+                  onChange={(event) =>
+                    setQuickReductionPercent(Math.max(0, parseNumeric(event.target.value)))
+                  }
+                />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Percent of current spend you aim to save after rollout.
+                </span>
+              </label>
+              <label className="text-sm text-slate-200">
+                One-time investment
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                  inputMode="decimal"
+                  value={quickOneTime}
+                  onChange={(event) =>
+                    setQuickOneTime(Math.max(0, parseNumeric(event.target.value)))
+                  }
+                />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Money you spend once to start the project.
+                </span>
+              </label>
+              <label className="text-sm text-slate-200">
+                Annual run cost
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                  inputMode="decimal"
+                  value={quickAnnualRun}
+                  onChange={(event) =>
+                    setQuickAnnualRun(Math.max(0, parseNumeric(event.target.value)))
+                  }
+                />
+                <span className="mt-1 block text-xs text-slate-400">
+                  Money you keep paying each year after launch.
+                </span>
+              </label>
+              <label className="text-sm text-slate-200">
+                Planning years
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                  inputMode="numeric"
+                  value={quickHorizon}
+                  onChange={(event) =>
+                    setQuickHorizon(Math.max(1, Math.trunc(parseNumeric(event.target.value) || 1)))
+                  }
+                />
+                <span className="mt-1 block text-xs text-slate-400">
+                  How many years you want to model in this estimate.
                 </span>
               </label>
             </div>
-
-            <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <dl className="mt-4 grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-4 sm:grid-cols-2">
               <div>
                 <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                  Monthly requests
+                  Projected annual benefit
                 </dt>
-                <dd className="text-base font-semibold">
-                  {usageScaleEstimate.monthlyRequests.toLocaleString()}
-                </dd>
+                <dd className="text-lg font-semibold">{asCurrency(quickEstimate.annualBenefit)}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                  Tokens per request
+                  Total benefit
                 </dt>
-                <dd className="text-base font-semibold">
-                  {usageScaleEstimate.tokensPerRequest.toLocaleString()}
-                </dd>
+                <dd className="text-lg font-semibold">{asCurrency(quickEstimate.totalBenefit)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                  Monthly tokens
-                </dt>
-                <dd className="text-base font-semibold">
-                  {usageScaleEstimate.monthlyTokens.toLocaleString()}
-                </dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Total cost</dt>
+                <dd className="text-lg font-semibold">{asCurrency(quickEstimate.totalCost)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                  Monthly API cost
-                </dt>
-                <dd className="text-base font-semibold">
-                  {asCurrency(usageScaleEstimate.monthlyApiCost)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                  Annual API cost
-                </dt>
-                <dd className="text-base font-semibold">
-                  {asCurrency(usageScaleEstimate.annualApiCost)}
-                </dd>
+                <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">Net impact</dt>
+                <dd className="text-lg font-semibold">{asCurrency(quickEstimate.net)}</dd>
               </div>
             </dl>
-          </div>
-        </SectionForm>
-      ) : null}
 
-      {activeScreen === 'scope' ? (
-        <SectionForm
-          title="Scope & Baseline"
-          description="Set your baseline first so downstream cost and value projections stay grounded."
-          icon={<Compass className="size-5" />}
-          status={sectionStatus.scope}
-          onSave={() => void saveWorkspaceDraft()}
-          onCalculate={calculate}
-          onClear={clearScope}
-          onClose={closeToLauncher}
-          isSaving={isSavingDraft}
-          isCalculating={isCalculating}
-          clearConfirmMessage="Reset baseline cost and horizon to defaults?"
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm text-slate-200">
-              Baseline annual cost
-              <input
-                className="rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="decimal"
-                value={input.baselineAnnualCost}
-                onChange={(event) => setMeta('baselineAnnualCost', event.target.value)}
-              />
-              <span className="text-xs text-slate-400">
-                Current yearly spend before this initiative. Example: existing team and tooling
-                cost.
-              </span>
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-200">
-              Horizon years
-              <input
-                className="rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
-                inputMode="numeric"
-                value={input.horizonYears}
-                onChange={(event) => setMeta('horizonYears', event.target.value)}
-              />
-              <span className="text-xs text-slate-400">
-                How many years to project for totals, ROI, and payback.
-              </span>
-            </label>
-          </div>
-        </SectionForm>
-      ) : null}
+            <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+              <h4 className="text-base font-semibold">Usage Scaling Calculator</h4>
+              <p className="mt-1 text-sm text-slate-300">
+                AI behaves like metered infrastructure. Forecast usage at scale before committing
+                architecture.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <label className="text-sm text-slate-200">
+                  Monthly active users
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    inputMode="numeric"
+                    value={monthlyActiveUsers}
+                    onChange={(event) =>
+                      setMonthlyActiveUsers(
+                        Math.max(0, Math.trunc(parseNumeric(event.target.value))),
+                      )
+                    }
+                  />
+                  <span className="mt-1 block text-xs text-slate-400">
+                    Estimated users who will use the AI feature each month.
+                  </span>
+                </label>
+                <label className="text-sm text-slate-200">
+                  Requests per user / month
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    inputMode="numeric"
+                    value={requestsPerUserPerMonth}
+                    onChange={(event) =>
+                      setRequestsPerUserPerMonth(
+                        Math.max(0, Math.trunc(parseNumeric(event.target.value))),
+                      )
+                    }
+                  />
+                  <span className="mt-1 block text-xs text-slate-400">
+                    Average prompts each user sends per month.
+                  </span>
+                </label>
+                <label className="text-sm text-slate-200">
+                  Avg prompt tokens / request
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    inputMode="numeric"
+                    value={avgPromptTokens}
+                    onChange={(event) =>
+                      setAvgPromptTokens(Math.max(0, Math.trunc(parseNumeric(event.target.value))))
+                    }
+                  />
+                  <span className="mt-1 block text-xs text-slate-400">
+                    Input token size per request before model response.
+                  </span>
+                </label>
+                <label className="text-sm text-slate-200">
+                  Avg completion tokens / request
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    inputMode="numeric"
+                    value={avgCompletionTokens}
+                    onChange={(event) =>
+                      setAvgCompletionTokens(
+                        Math.max(0, Math.trunc(parseNumeric(event.target.value))),
+                      )
+                    }
+                  />
+                  <span className="mt-1 block text-xs text-slate-400">
+                    Output token size generated by the model each request.
+                  </span>
+                </label>
+                <label className="text-sm text-slate-200">
+                  API cost per 1K tokens (USD)
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    inputMode="decimal"
+                    value={apiCostPer1kTokens}
+                    onChange={(event) =>
+                      setApiCostPer1kTokens(Math.max(0, parseNumeric(event.target.value)))
+                    }
+                  />
+                  <span className="mt-1 block text-xs text-slate-400">
+                    Provider price in dollars for each 1,000 tokens.
+                  </span>
+                </label>
+              </div>
 
-      {activeScreen === 'costs' || activeScreen === 'benefits' || activeScreen === 'risks' ? (
-        (() => {
-          const sectionId: WorksheetSectionId =
-            activeScreen === 'costs' ? 'cost' : activeScreen === 'benefits' ? 'benefit' : 'mitigation';
-          const screenMeta = {
-            costs: {
-              title: 'Implementation Costs',
-              description:
-                'Capture one-time and annual costs for the full delivery footprint.',
-              clearMessage: 'Zero out all cost rows? Row labels stay; only values reset.',
-            },
-            benefits: {
-              title: 'Business Benefits',
-              description:
-                'Estimate measurable savings, productivity, and differentiation value.',
-              clearMessage: 'Zero out all benefit rows? Row labels stay; only values reset.',
-            },
-            risks: {
-              title: 'Risk Mitigations',
-              description:
-                'Budget explicit risk controls before finalizing investment decisions.',
-              clearMessage: 'Zero out all mitigation rows? Row labels stay; only values reset.',
-            },
-          }[activeScreen];
-          return (
-            <SectionForm
-              title={screenMeta.title}
-              description={screenMeta.description}
-              icon={<Layers3 className="size-5" />}
-              status={sectionStatus[activeScreen]}
-              onSave={() => void saveWorkspaceDraft()}
-              onCalculate={calculate}
-              onClear={() => clearWorksheetSection(sectionId)}
-              onClose={closeToLauncher}
-              isSaving={isSavingDraft}
-              isCalculating={isCalculating}
-              clearConfirmMessage={screenMeta.clearMessage}
-            >
-              <div className="grid gap-4">
-                {sections
-                  .filter((section) => section.id === sectionId)
-                  .map((section) => (
-                    <article key={section.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-sm text-slate-300">{section.subtitle}</p>
-                      <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs text-amber-100">
-                        Enter Year 1 setup spend under one-time, then steady-state spend/value
-                        under annual.
-                      </div>
+              <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                    Monthly requests
+                  </dt>
+                  <dd className="text-base font-semibold">
+                    {usageScaleEstimate.monthlyRequests.toLocaleString()}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                    Tokens per request
+                  </dt>
+                  <dd className="text-base font-semibold">
+                    {usageScaleEstimate.tokensPerRequest.toLocaleString()}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                    Monthly tokens
+                  </dt>
+                  <dd className="text-base font-semibold">
+                    {usageScaleEstimate.monthlyTokens.toLocaleString()}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                    Monthly API cost
+                  </dt>
+                  <dd className="text-base font-semibold">
+                    {asCurrency(usageScaleEstimate.monthlyApiCost)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                    Annual API cost
+                  </dt>
+                  <dd className="text-base font-semibold">
+                    {asCurrency(usageScaleEstimate.annualApiCost)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
 
-                      <div className="mt-4 space-y-3">
-                        {section.rows.map((row, index) => (
-                          <div
-                            key={row.key}
-                            className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
-                          >
-                            <p className="text-sm font-medium text-slate-100">{row.label}</p>
-                            <p className="mt-1 text-xs text-slate-400">{row.description}</p>
-                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                              <label className="text-xs text-slate-400">
-                                One-time
-                                <input
-                                  className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
-                                  inputMode="decimal"
-                                  value={row.oneTime}
-                                  onChange={(event) =>
-                                    setLine(section.id, index, 'oneTime', event.target.value)
-                                  }
-                                />
-                                <span className="mt-1 block text-[11px] text-slate-500">
-                                  Used in Year 1 only.
-                                </span>
-                              </label>
-                              <label className="text-xs text-slate-400">
-                                Annual (Year 2+)
-                                <input
-                                  className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
-                                  inputMode="decimal"
-                                  value={row.annual}
-                                  onChange={(event) =>
-                                    setLine(section.id, index, 'annual', event.target.value)
-                                  }
-                                />
-                                <span className="mt-1 block text-[11px] text-slate-500">
-                                  Repeats every year after Year 1.
-                                </span>
-                              </label>
+            <div className="mt-6 rounded-2xl border border-violet-400/20 bg-violet-500/10 p-4">
+              <div className="flex items-start gap-2">
+                <Bot className="mt-0.5 size-4 text-violet-200" />
+                <div>
+                  <h4 className="text-base font-semibold text-violet-100">Provider Studio</h4>
+                  <p className="mt-1 text-xs text-violet-100/80">
+                    Choose your model strategy: bring your own OpenAI-compatible API or point to a
+                    local model endpoint.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={`rounded-lg border px-3 py-1.5 text-xs ${
+                    providerMode === 'openai-compatible'
+                      ? 'border-violet-300/70 bg-violet-500/30 text-violet-50'
+                      : 'border-white/20 bg-slate-900/40 text-slate-300'
+                  }`}
+                  onClick={() => setProviderMode('openai-compatible')}
+                >
+                  OpenAI-compatible API
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-lg border px-3 py-1.5 text-xs ${
+                    providerMode === 'local-model'
+                      ? 'border-violet-300/70 bg-violet-500/30 text-violet-50'
+                      : 'border-white/20 bg-slate-900/40 text-slate-300'
+                  }`}
+                  onClick={() => setProviderMode('local-model')}
+                >
+                  Local model runtime
+                </button>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="text-sm text-slate-200">
+                  Base URL
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    value={providerBaseUrl}
+                    onChange={(event) => setProviderBaseUrl(event.target.value)}
+                    placeholder="https://api.openai.com/v1 or http://localhost:11434/v1"
+                  />
+                </label>
+                <label className="text-sm text-slate-200">
+                  Model
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    value={providerModel}
+                    onChange={(event) => setProviderModel(event.target.value)}
+                    placeholder="gpt-4.1-mini or llama3.1"
+                  />
+                </label>
+                <label className="text-sm text-slate-200 sm:col-span-2">
+                  API key {providerMode === 'local-model' ? '(optional for local gateways)' : ''}
+                  <input
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                    type="password"
+                    value={providerApiKey}
+                    onChange={(event) => setProviderApiKey(event.target.value)}
+                    placeholder="Stored in your workspace draft only"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-lg border border-violet-300/40 bg-violet-500/20 px-3 py-1.5 text-xs font-semibold text-violet-100"
+                  onClick={runProviderValidation}
+                >
+                  <Cpu className="size-3.5" />
+                  Validate provider settings
+                </button>
+                <p className="text-xs text-slate-300">{providerValidation}</p>
+              </div>
+            </div>
+          </SectionForm>
+        ) : null}
+
+        {activeScreen === 'scope' ? (
+          <SectionForm
+            title="Scope & Baseline"
+            description="Set your baseline first so downstream cost and value projections stay grounded."
+            icon={<Compass className="size-5" />}
+            status={sectionStatus.scope}
+            onSave={() => void saveWorkspaceDraft()}
+            onCalculate={calculate}
+            onClear={clearScope}
+            onClose={closeToLauncher}
+            isSaving={isSavingDraft}
+            isCalculating={isCalculating}
+            clearConfirmMessage="Reset baseline cost and horizon to defaults?"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm text-slate-200">
+                Baseline annual cost
+                <input
+                  className="rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                  inputMode="decimal"
+                  value={input.baselineAnnualCost}
+                  onChange={(event) => setMeta('baselineAnnualCost', event.target.value)}
+                />
+                <span className="text-xs text-slate-400">
+                  Current yearly spend before this initiative. Example: existing team and tooling
+                  cost.
+                </span>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-200">
+                Horizon years
+                <input
+                  className="rounded-xl border border-white/15 bg-slate-950/50 px-3 py-2"
+                  inputMode="numeric"
+                  value={input.horizonYears}
+                  onChange={(event) => setMeta('horizonYears', event.target.value)}
+                />
+                <span className="text-xs text-slate-400">
+                  How many years to project for totals, ROI, and payback.
+                </span>
+              </label>
+            </div>
+          </SectionForm>
+        ) : null}
+
+        {activeScreen === 'costs' || activeScreen === 'benefits' || activeScreen === 'risks'
+          ? (() => {
+              const sectionId: WorksheetSectionId =
+                activeScreen === 'costs'
+                  ? 'cost'
+                  : activeScreen === 'benefits'
+                    ? 'benefit'
+                    : 'mitigation';
+              const screenMeta = {
+                costs: {
+                  title: 'Implementation Costs',
+                  description: 'Capture one-time and annual costs for the full delivery footprint.',
+                  clearMessage: 'Zero out all cost rows? Row labels stay; only values reset.',
+                },
+                benefits: {
+                  title: 'Business Benefits',
+                  description:
+                    'Estimate measurable savings, productivity, and differentiation value.',
+                  clearMessage: 'Zero out all benefit rows? Row labels stay; only values reset.',
+                },
+                risks: {
+                  title: 'Risk Mitigations',
+                  description:
+                    'Budget explicit risk controls before finalizing investment decisions.',
+                  clearMessage: 'Zero out all mitigation rows? Row labels stay; only values reset.',
+                },
+              }[activeScreen];
+              return (
+                <SectionForm
+                  title={screenMeta.title}
+                  description={screenMeta.description}
+                  icon={<Layers3 className="size-5" />}
+                  status={sectionStatus[activeScreen]}
+                  onSave={() => void saveWorkspaceDraft()}
+                  onCalculate={calculate}
+                  onClear={() => clearWorksheetSection(sectionId)}
+                  onClose={closeToLauncher}
+                  isSaving={isSavingDraft}
+                  isCalculating={isCalculating}
+                  clearConfirmMessage={screenMeta.clearMessage}
+                >
+                  <div className="grid gap-4">
+                    {sections
+                      .filter((section) => section.id === sectionId)
+                      .map((section) => (
+                        <article
+                          key={section.id}
+                          className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                        >
+                          <p className="text-sm text-slate-300">{section.subtitle}</p>
+                          <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-3 text-xs text-amber-100">
+                            Enter Year 1 setup spend under one-time, then steady-state spend/value
+                            under annual.
+                          </div>
+
+                          <div className="mt-4 rounded-2xl border border-violet-400/20 bg-violet-500/10 p-3">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold text-violet-100">
+                                  Cost Intelligence Suggestions
+                                </p>
+                                <p className="mt-0.5 text-xs text-violet-100/80">
+                                  Search trusted reference sources for worker, equipment, API, and
+                                  risk-control assumptions, then apply values into this sheet.
+                                </p>
+                              </div>
+                            </div>
+
+                            <label className="mt-3 block text-xs text-slate-300">
+                              <span className="mb-1 inline-flex items-center gap-1">
+                                <Search className="size-3.5" /> Search sources
+                              </span>
+                              <input
+                                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm"
+                                value={sourceLookupQuery}
+                                onChange={(event) => setSourceLookupQuery(event.target.value)}
+                                placeholder="Example: workers, GPU, API pricing, compliance"
+                              />
+                            </label>
+
+                            <div className="mt-3 grid gap-2">
+                              {filteredCostSuggestions.length === 0 ? (
+                                <p className="rounded-xl border border-white/10 bg-slate-950/35 p-3 text-xs text-slate-400">
+                                  No suggestions match your query for this section.
+                                </p>
+                              ) : (
+                                filteredCostSuggestions.map((item) => (
+                                  <article
+                                    key={item.id}
+                                    className="rounded-xl border border-white/10 bg-slate-950/35 p-3"
+                                  >
+                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-medium text-slate-100">
+                                          {item.title}
+                                        </p>
+                                        <p className="mt-0.5 text-xs text-slate-400">{item.note}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="rounded-lg border border-violet-300/40 bg-violet-500/20 px-2 py-1 text-[11px] font-semibold text-violet-100"
+                                        onClick={() => applyCostSuggestion(item.id)}
+                                      >
+                                        Apply values
+                                      </button>
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-300">
+                                      <span className="rounded-full border border-white/10 px-2 py-0.5">
+                                        One-time +{asCurrency(item.oneTime)}
+                                      </span>
+                                      <span className="rounded-full border border-white/10 px-2 py-0.5">
+                                        Annual +{asCurrency(item.annual)}
+                                      </span>
+                                      <a
+                                        href={item.sourceUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="rounded-full border border-violet-300/30 px-2 py-0.5 text-violet-200 hover:bg-violet-500/20"
+                                      >
+                                        Source: {item.sourceName}
+                                      </a>
+                                    </div>
+                                  </article>
+                                ))
+                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
-              </div>
-            </SectionForm>
-          );
-        })()
-      ) : null}
 
-      {activeScreen === 'readiness' ? (
-        <SectionForm
-          title="AI Cost Readiness Checklist"
-          description="Make hidden cost and execution complexity visible early. Mark each item as Unknown, Draft, or Ready."
-          icon={<ShieldCheck className="size-5" />}
-          status={sectionStatus.readiness}
-          onSave={() => void saveWorkspaceDraft()}
-          onCalculate={calculate}
-          onClear={clearReadiness}
-          onClose={closeToLauncher}
-          isSaving={isSavingDraft}
-          isCalculating={isCalculating}
-          clearConfirmMessage="Reset every readiness item back to Unknown?"
-        >
-          <p className="text-xs text-slate-400">
-            Unknown = not assessed yet, Draft = in progress, Ready = validated with owner and
-            evidence.
-          </p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm">
-              <p className="text-xs uppercase tracking-[0.12em] text-emerald-200/80">Ready</p>
-              <p className="mt-1 text-lg font-semibold text-emerald-100">
-                {readinessStats.readyCount}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-3 text-sm">
-              <p className="text-xs uppercase tracking-[0.12em] text-sky-200/80">Draft</p>
-              <p className="mt-1 text-lg font-semibold text-sky-100">{readinessStats.draftCount}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm">
-              <p className="text-xs uppercase tracking-[0.12em] text-amber-200/80">Unknown</p>
-              <p className="mt-1 text-lg font-semibold text-amber-100">
-                {readinessStats.unknownCount}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm">
-              <p className="text-xs uppercase tracking-[0.12em] text-violet-200/80">Completion</p>
-              <p className="mt-1 text-lg font-semibold text-violet-100">
-                {readinessStats.completionPercent.toFixed(0)}%
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {READINESS_ITEMS.map((item) => {
-              const state = readiness[item.key] ?? { status: 'unknown' };
-              return (
-                <article
-                  key={item.key}
-                  className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
-                >
-                  <p className="text-sm font-semibold text-slate-100">{item.label}</p>
-                  <p className="mt-1 text-xs text-slate-400">{item.description}</p>
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'unknown'
-                          ? 'border-amber-300/60 bg-amber-500/20 text-amber-100'
-                          : 'border-white/10 bg-slate-900/45'
-                      }`}
-                      onClick={() => setReadinessStatus(item.key, 'unknown')}
-                    >
-                      Unknown
-                    </button>
-                    <button
-                      type="button"
-                      className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'draft'
-                          ? 'border-sky-300/60 bg-sky-500/20 text-sky-100'
-                          : 'border-white/10 bg-slate-900/45'
-                      }`}
-                      onClick={() => setReadinessStatus(item.key, 'draft')}
-                    >
-                      Draft
-                    </button>
-                    <button
-                      type="button"
-                      className={`rounded-lg border px-2 py-1 text-xs ${
-                        state.status === 'ready'
-                          ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100'
-                          : 'border-white/10 bg-slate-900/45'
-                      }`}
-                      onClick={() => setReadinessStatus(item.key, 'ready')}
-                    >
-                      Ready
-                    </button>
+                          <div className="mt-4 space-y-3">
+                            {section.rows.map((row, index) => (
+                              <div
+                                key={row.key}
+                                className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
+                              >
+                                <p className="text-sm font-medium text-slate-100">{row.label}</p>
+                                <p className="mt-1 text-xs text-slate-400">{row.description}</p>
+                                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  <label className="text-xs text-slate-400">
+                                    One-time
+                                    <input
+                                      className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
+                                      inputMode="decimal"
+                                      value={row.oneTime}
+                                      onChange={(event) =>
+                                        setLine(section.id, index, 'oneTime', event.target.value)
+                                      }
+                                    />
+                                    <span className="mt-1 block text-[11px] text-slate-500">
+                                      Used in Year 1 only.
+                                    </span>
+                                  </label>
+                                  <label className="text-xs text-slate-400">
+                                    Annual (Year 2+)
+                                    <input
+                                      className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/45 px-2 py-1.5 text-sm"
+                                      inputMode="decimal"
+                                      value={row.annual}
+                                      onChange={(event) =>
+                                        setLine(section.id, index, 'annual', event.target.value)
+                                      }
+                                    />
+                                    <span className="mt-1 block text-[11px] text-slate-500">
+                                      Repeats every year after Year 1.
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </article>
+                      ))}
                   </div>
-                </article>
+                </SectionForm>
               );
-            })}
-          </div>
-        </SectionForm>
-      ) : null}
+            })()
+          : null}
 
-      {activeScreen === 'summary' ? (
-        <SectionForm
-          title="Decision Summary"
-          description="Deterministic outputs from worksheet inputs. No AI guesswork in the numbers."
-          icon={<Gauge className="size-5" />}
-          status={sectionStatus.summary}
-          onCalculate={calculate}
-          onClear={clearSummary}
-          onClose={closeToLauncher}
-          isCalculating={isCalculating}
-          clearConfirmMessage="Clear the calculated summary? Inputs are not affected."
-        >
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-            <p className="mt-1 text-sm text-slate-300">
-              Deterministic outputs from worksheet inputs. No AI guesswork in the numbers.
+        {activeScreen === 'readiness' ? (
+          <SectionForm
+            title="AI Cost Readiness Checklist"
+            description="Make hidden cost and execution complexity visible early. Mark each item as Unknown, Draft, or Ready."
+            icon={<ShieldCheck className="size-5" />}
+            status={sectionStatus.readiness}
+            onSave={() => void saveWorkspaceDraft()}
+            onCalculate={calculate}
+            onClear={clearReadiness}
+            onClose={closeToLauncher}
+            isSaving={isSavingDraft}
+            isCalculating={isCalculating}
+            clearConfirmMessage="Reset every readiness item back to Unknown?"
+          >
+            <p className="text-xs text-slate-400">
+              Unknown = not assessed yet, Draft = in progress, Ready = validated with owner and
+              evidence.
             </p>
 
-            {preview ? (
-              <>
-                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <dt className="text-slate-400">Total cost of ownership</dt>
-                  <dd className="text-right font-semibold">
-                    {asCurrency(preview.totalCostOfOwnership)}
-                  </dd>
-                  <dt className="text-slate-400">Total benefit</dt>
-                  <dd className="text-right font-semibold">{asCurrency(preview.totalBenefit)}</dd>
-                  <dt className="text-slate-400">Net value</dt>
-                  <dd className="text-right font-semibold">{asCurrency(preview.netValue)}</dd>
-                  <dt className="text-slate-400">Net annual benefit</dt>
-                  <dd className="text-right font-semibold">
-                    {asCurrency(preview.netAnnualBenefit)}
-                  </dd>
-                  <dt className="text-slate-400">ROI</dt>
-                  <dd className="text-right font-semibold">{asPercent(preview.roiPercent)}</dd>
-                  <dt className="text-slate-400">Payback</dt>
-                  <dd className="text-right font-semibold">{asMonths(preview.paybackMonths)}</dd>
-                </dl>
-                <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/30 p-3 text-xs text-slate-300">
-                  <p>ROI shows how much value you get back compared to what you spend.</p>
-                  <p className="mt-1">
-                    Payback shows when cumulative gains recover your initial investment.
-                  </p>
-                </div>
-                <div className="mt-4 grid gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
-                  <p>Cost section total: {asCurrency(getSectionTotal(preview, 'cost'))}</p>
-                  <p>Benefit section total: {asCurrency(getSectionTotal(preview, 'benefit'))}</p>
-                  <p>Risk mitigation total: {asCurrency(getSectionTotal(preview, 'mitigation'))}</p>
-                </div>
-                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
-                  <p className="font-semibold">Readiness Snapshot</p>
-                  <p className="mt-1">
-                    Ready items: {readinessStats.readyCount} / {READINESS_ITEMS.length}
-                  </p>
-                  <p>Open gaps (unknown): {readinessStats.unknownCount}</p>
-                  <p>
-                    Scale estimate annual API cost: {asCurrency(usageScaleEstimate.annualApiCost)}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <p className="mt-4 text-sm text-slate-300">
-                Press calculate to view deterministic outputs.
-              </p>
-            )}
-          </div>
-
-          <Card className="rounded-3xl border-white/15 bg-[#0f1a35]/55 backdrop-blur-sm">
-            <CardHeader className="p-5 pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Compass className="size-4" />
-                Guided Next Step
-              </CardTitle>
-              <CardDescription className="text-sm leading-6 text-slate-300">
-                Future agentic capability will suggest platform options, modern data points, and
-                tradeoffs based on what users enter in each step.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-5 pb-5 pt-0 text-sm text-slate-300">
-              <div className="space-y-3">
-                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
-                  <Gauge className="mt-0.5 size-4 text-cyan-200" />
-                  <p>
-                    Use summary metrics to decide whether this initiative should move to pilot,
-                    redesign, or pause.
-                  </p>
-                </div>
-                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
-                  <Layers3 className="mt-0.5 size-4 text-violet-200" />
-                  <p>
-                    Save snapshots after each major assumption shift to track how strategy changes
-                    impact ROI.
-                  </p>
-                </div>
-                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
-                  <ShieldCheck className="mt-0.5 size-4 text-emerald-200" />
-                  <p>
-                    Treat unknown readiness items as execution risk until cost ownership and
-                    controls are defined.
-                  </p>
-                </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.12em] text-emerald-200/80">Ready</p>
+                <p className="mt-1 text-lg font-semibold text-emerald-100">
+                  {readinessStats.readyCount}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-          </div>
-        </SectionForm>
-      ) : null}
+              <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.12em] text-sky-200/80">Draft</p>
+                <p className="mt-1 text-lg font-semibold text-sky-100">
+                  {readinessStats.draftCount}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.12em] text-amber-200/80">Unknown</p>
+                <p className="mt-1 text-lg font-semibold text-amber-100">
+                  {readinessStats.unknownCount}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.12em] text-violet-200/80">Completion</p>
+                <p className="mt-1 text-lg font-semibold text-violet-100">
+                  {readinessStats.completionPercent.toFixed(0)}%
+                </p>
+              </div>
+            </div>
 
-      {activeScreen === 'launcher' ? (
-        <section className="mt-6 rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
-          <h2 className="text-lg font-semibold">Recalculate From Here</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            You do not need to scroll back up. Use this button anytime after editing fields.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button className="gap-2" onClick={calculate} disabled={isCalculating}>
-              <Sparkles className="size-4" />
-              {isCalculating ? 'Calculating...' : 'Calculate Business Case'}
-            </Button>
-            <Button variant="outline" onClick={() => setActiveScreen('summary')}>
-              Open Decision Summary
-            </Button>
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              {READINESS_ITEMS.map((item) => {
+                const state = readiness[item.key] ?? { status: 'unknown' };
+                return (
+                  <article
+                    key={item.key}
+                    className="rounded-2xl border border-white/10 bg-slate-950/35 p-3"
+                  >
+                    <p className="text-sm font-semibold text-slate-100">{item.label}</p>
+                    <p className="mt-1 text-xs text-slate-400">{item.description}</p>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className={`rounded-lg border px-2 py-1 text-xs ${
+                          state.status === 'unknown'
+                            ? 'border-amber-300/60 bg-amber-500/20 text-amber-100'
+                            : 'border-white/10 bg-slate-900/45'
+                        }`}
+                        onClick={() => setReadinessStatus(item.key, 'unknown')}
+                      >
+                        Unknown
+                      </button>
+                      <button
+                        type="button"
+                        className={`rounded-lg border px-2 py-1 text-xs ${
+                          state.status === 'draft'
+                            ? 'border-sky-300/60 bg-sky-500/20 text-sky-100'
+                            : 'border-white/10 bg-slate-900/45'
+                        }`}
+                        onClick={() => setReadinessStatus(item.key, 'draft')}
+                      >
+                        Draft
+                      </button>
+                      <button
+                        type="button"
+                        className={`rounded-lg border px-2 py-1 text-xs ${
+                          state.status === 'ready'
+                            ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100'
+                            : 'border-white/10 bg-slate-900/45'
+                        }`}
+                        onClick={() => setReadinessStatus(item.key, 'ready')}
+                      >
+                        Ready
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </SectionForm>
+        ) : null}
+
+        {activeScreen === 'summary' ? (
+          <SectionForm
+            title="Decision Summary"
+            description="Deterministic outputs from worksheet inputs. No AI guesswork in the numbers."
+            icon={<Gauge className="size-5" />}
+            status={sectionStatus.summary}
+            onCalculate={calculate}
+            onClear={clearSummary}
+            onClose={closeToLauncher}
+            isCalculating={isCalculating}
+            clearConfirmMessage="Clear the calculated summary? Inputs are not affected."
+          >
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+              <div className="rounded-3xl border border-white/15 bg-[#0f1a35]/55 p-5 backdrop-blur-sm">
+                <p className="mt-1 text-sm text-slate-300">
+                  Deterministic outputs from worksheet inputs. No AI guesswork in the numbers.
+                </p>
+
+                {preview ? (
+                  <>
+                    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <dt className="text-slate-400">Total cost of ownership</dt>
+                      <dd className="text-right font-semibold">
+                        {asCurrency(preview.totalCostOfOwnership)}
+                      </dd>
+                      <dt className="text-slate-400">Total benefit</dt>
+                      <dd className="text-right font-semibold">
+                        {asCurrency(preview.totalBenefit)}
+                      </dd>
+                      <dt className="text-slate-400">Net value</dt>
+                      <dd className="text-right font-semibold">{asCurrency(preview.netValue)}</dd>
+                      <dt className="text-slate-400">Net annual benefit</dt>
+                      <dd className="text-right font-semibold">
+                        {asCurrency(preview.netAnnualBenefit)}
+                      </dd>
+                      <dt className="text-slate-400">ROI</dt>
+                      <dd className="text-right font-semibold">{asPercent(preview.roiPercent)}</dd>
+                      <dt className="text-slate-400">Payback</dt>
+                      <dd className="text-right font-semibold">
+                        {asMonths(preview.paybackMonths)}
+                      </dd>
+                    </dl>
+                    <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/30 p-3 text-xs text-slate-300">
+                      <p>ROI shows how much value you get back compared to what you spend.</p>
+                      <p className="mt-1">
+                        Payback shows when cumulative gains recover your initial investment.
+                      </p>
+                    </div>
+                    <div className="mt-4 grid gap-2 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
+                      <p>Cost section total: {asCurrency(getSectionTotal(preview, 'cost'))}</p>
+                      <p>
+                        Benefit section total: {asCurrency(getSectionTotal(preview, 'benefit'))}
+                      </p>
+                      <p>
+                        Risk mitigation total: {asCurrency(getSectionTotal(preview, 'mitigation'))}
+                      </p>
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm">
+                      <p className="font-semibold">Readiness Snapshot</p>
+                      <p className="mt-1">
+                        Ready items: {readinessStats.readyCount} / {READINESS_ITEMS.length}
+                      </p>
+                      <p>Open gaps (unknown): {readinessStats.unknownCount}</p>
+                      <p>
+                        Scale estimate annual API cost:{' '}
+                        {asCurrency(usageScaleEstimate.annualApiCost)}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-300">
+                    Press calculate to view deterministic outputs.
+                  </p>
+                )}
+              </div>
+
+              <Card className="rounded-3xl border-white/15 bg-[#0f1a35]/55 backdrop-blur-sm">
+                <CardHeader className="p-5 pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Compass className="size-4" />
+                    Guided Next Step
+                  </CardTitle>
+                  <CardDescription className="text-sm leading-6 text-slate-300">
+                    Future agentic capability will suggest platform options, modern data points, and
+                    tradeoffs based on what users enter in each step.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-5 pb-5 pt-0 text-sm text-slate-300">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                      <Gauge className="mt-0.5 size-4 text-cyan-200" />
+                      <p>
+                        Use summary metrics to decide whether this initiative should move to pilot,
+                        redesign, or pause.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                      <Layers3 className="mt-0.5 size-4 text-violet-200" />
+                      <p>
+                        Save snapshots after each major assumption shift to track how strategy
+                        changes impact ROI.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                      <ShieldCheck className="mt-0.5 size-4 text-emerald-200" />
+                      <p>
+                        Treat unknown readiness items as execution risk until cost ownership and
+                        controls are defined.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </SectionForm>
+        ) : null}
+
+        {activeScreen === 'launcher' ? null : null}
+      </main>
+
+      {showHelp ? <HelpModal onClose={() => setShowHelp(false)} /> : null}
+
+      {isExited ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0e0814]/90 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-3xl border border-violet-400/20 bg-[#120920]/95 p-8 text-center shadow-2xl">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-violet-500/20">
+              <LogOut className="size-7 text-violet-200" />
+            </div>
+            <h2 className="mt-4 text-xl font-semibold text-violet-50">Session Ended</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Your work is saved. You can safely close this tab.
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button
+                size="sm"
+                className="bg-violet-600 hover:bg-violet-500"
+                onClick={() => {
+                  setIsExited(false);
+                  setSelectedInitiativeId(null);
+                  setInput(createDefaultBusinessCaseInput());
+                  setReadiness(createDefaultReadinessState());
+                  setPreview(null);
+                  setActiveScreen('launcher');
+                }}
+              >
+                Start New Session
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsExited(false)}>
+                Return to App
+              </Button>
+            </div>
           </div>
-        </section>
+        </div>
       ) : null}
-    </main>
+    </>
   );
 }
