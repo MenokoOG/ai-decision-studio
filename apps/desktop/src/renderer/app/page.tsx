@@ -385,6 +385,7 @@ export default function Page() {
                   <tr key={`${option.id ?? 'draft'}-${index}`}>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Option name"
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
                         onChange={(event) =>
@@ -394,6 +395,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Cost score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -406,6 +408,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Benefit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -418,6 +421,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Risk score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -430,6 +434,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Fit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -446,7 +451,9 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        aria-label="Remove decision option"
+                        variant="destructive"
+                        size="sm"
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
                       >
@@ -568,7 +575,9 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      aria-label="Remove roadmap phase"
+                      variant="destructive"
+                      size="sm"
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
                     >
