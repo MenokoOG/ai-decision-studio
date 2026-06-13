@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -385,6 +385,7 @@ export default function Page() {
                   <tr key={`${option.id ?? 'draft'}-${index}`}>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Option Name for option ${index + 1}`}
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
                         onChange={(event) =>
@@ -394,6 +395,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Cost Score for option ${index + 1}`}
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -406,6 +408,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Benefit Score for option ${index + 1}`}
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -418,6 +421,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Risk Score for option ${index + 1}`}
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -430,6 +434,7 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Fit Score for option ${index + 1}`}
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
@@ -446,10 +451,14 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        aria-label={`Remove option ${index + 1}`}
+                        variant="destructive"
+                        size="sm"
+                        className="gap-2"
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
                       >
+                        <Trash2 className="size-4" />
                         Remove
                       </Button>
                     </td>
@@ -516,18 +525,21 @@ export default function Page() {
                 </p>
                 <div className="mt-2 grid gap-2">
                   <input
+                    aria-label={`Title for roadmap phase ${index + 1}`}
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                     value={phase.title}
                     onChange={(event) => setRoadmapPhase(index, 'title', event.target.value)}
                     placeholder="Phase title"
                   />
                   <input
+                    aria-label={`Lane for roadmap phase ${index + 1}`}
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                     value={phase.lane}
                     onChange={(event) => setRoadmapPhase(index, 'lane', event.target.value)}
                     placeholder="Lane"
                   />
                   <textarea
+                    aria-label={`Deliverables for roadmap phase ${index + 1}`}
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                     rows={3}
                     value={phase.deliverables}
@@ -538,6 +550,7 @@ export default function Page() {
                     <label className="text-xs text-slate-400">
                       Start date
                       <input
+                        aria-label={`Start date for roadmap phase ${index + 1}`}
                         className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="date"
                         value={phase.startDate ? phase.startDate.slice(0, 10) : ''}
@@ -553,6 +566,7 @@ export default function Page() {
                     <label className="text-xs text-slate-400">
                       End date
                       <input
+                        aria-label={`End date for roadmap phase ${index + 1}`}
                         className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="date"
                         value={phase.endDate ? phase.endDate.slice(0, 10) : ''}
@@ -568,10 +582,14 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      aria-label={`Remove roadmap phase ${index + 1}`}
+                      variant="destructive"
+                      size="sm"
+                      className="gap-2"
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
                     >
+                      <Trash2 className="size-4" />
                       Remove Phase
                     </Button>
                   </div>

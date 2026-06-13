@@ -1,0 +1,3 @@
+## 2024-05-24 - [Destructive Action Affordance and Table Accessibility]
+**Learning:** Providing clear visual affordance for destructive actions (like "Remove") using a dedicated `destructive` variant and recognizable iconography (`Trash2`) reduces user error and increases confidence. Additionally, interactive elements in dense table layouts often lack proper labeling; dynamic `aria-label` attributes provide necessary context for screen readers without impacting the visual design.
+**Action:** Use the `destructive` button variant for any deletion or removal tasks. Ensure all icon-only buttons and dense table inputs have descriptive `aria-label` attributes.

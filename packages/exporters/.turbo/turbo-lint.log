@@ -1,6 +1,5 @@
 
-
-> @ai-cost-tool/exporters@0.1.0 lint /home/m3n0ko0g/development/04_products/ai-cost-tool-starter-ai-decision-studio-harness-clean/packages/exporters
+> @ai-cost-tool/exporters@0.1.0 lint /app/packages/exporters
 > echo 'lint pending'
 
 lint pending
