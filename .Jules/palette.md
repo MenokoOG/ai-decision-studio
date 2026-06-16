@@ -1,0 +1,3 @@
+## 2025-05-15 - [Destructive Action Affordance]
+**Learning:** Generic 'ghost' or 'outline' buttons for destructive actions like 'Remove' lack visual weight and can lead to accidental data loss. Using a semantic 'destructive' variant (typically red) paired with a clear iconography (e.g., Trash icon) creates a stronger visual warning. Furthermore, icon-only or generic labels should be supplemented with context-specific `aria-label` attributes (e.g., "Remove option [Name]") to provide clear context for screen reader users.
+**Action:** Always check for or implement a 'destructive' variant in the design system for any data-removal action. Ensure these actions include both visual (color/icon) and descriptive (aria-label) cues.
