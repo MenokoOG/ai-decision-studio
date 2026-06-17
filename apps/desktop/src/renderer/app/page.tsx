@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -446,10 +446,13 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        variant="destructive"
+                        size="sm"
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
+                        aria-label="Remove decision option"
                       >
+                        <Trash2 className="size-4" />
                         Remove
                       </Button>
                     </td>
@@ -568,10 +571,13 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      variant="destructive"
+                      size="sm"
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
+                      aria-label="Remove roadmap phase"
                     >
+                      <Trash2 className="size-4" />
                       Remove Phase
                     </Button>
                   </div>
