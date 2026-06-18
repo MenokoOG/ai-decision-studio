@@ -9,3 +9,5 @@ coverage
 *.db
 *.db-journal
 .DS_Store
+.turbo
+*.log

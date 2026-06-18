@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -390,6 +390,7 @@ export default function Page() {
                         onChange={(event) =>
                           setDecisionOption(index, 'optionName', event.target.value)
                         }
+                        aria-label="Option name"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -402,6 +403,7 @@ export default function Page() {
                         onChange={(event) =>
                           setDecisionOption(index, 'costScore', Number(event.target.value))
                         }
+                        aria-label="Cost score"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -414,6 +416,7 @@ export default function Page() {
                         onChange={(event) =>
                           setDecisionOption(index, 'benefitScore', Number(event.target.value))
                         }
+                        aria-label="Benefit score"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -426,6 +429,7 @@ export default function Page() {
                         onChange={(event) =>
                           setDecisionOption(index, 'riskScore', Number(event.target.value))
                         }
+                        aria-label="Risk score"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -438,6 +442,7 @@ export default function Page() {
                         onChange={(event) =>
                           setDecisionOption(index, 'fitScore', Number(event.target.value))
                         }
+                        aria-label="Strategic fit score"
                       />
                     </td>
                     <td className="px-3 py-2 text-slate-300">
@@ -446,10 +451,13 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        variant="destructive"
+                        size="sm"
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
+                        aria-label={`Remove option ${option.optionName || 'unnamed'}`}
                       >
+                        <Trash2 className="mr-1 size-4" />
                         Remove
                       </Button>
                     </td>
@@ -568,10 +576,13 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      variant="destructive"
+                      size="sm"
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
+                      aria-label={`Remove phase ${phase.title || 'unnamed'}`}
                     >
+                      <Trash2 className="mr-1 size-4" />
                       Remove Phase
                     </Button>
                   </div>
