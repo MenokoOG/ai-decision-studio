@@ -1,0 +1,15 @@
+
+> desktop@0.1.0 dev:renderer /app/apps/desktop
+> next dev src/renderer -p 3000
+
+   ▲ Next.js 15.5.15
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 7.1s (577 modules)
+ GET / 200 in 8233ms
+ GET / 200 in 144ms
+ GET / 200 in 142ms

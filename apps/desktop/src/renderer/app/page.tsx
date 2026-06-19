@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -386,6 +386,7 @@ export default function Page() {
                     <td className="px-3 py-2">
                       <input
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        aria-label="Option name"
                         value={option.optionName}
                         onChange={(event) =>
                           setDecisionOption(index, 'optionName', event.target.value)
@@ -395,6 +396,7 @@ export default function Page() {
                     <td className="px-3 py-2">
                       <input
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        aria-label="Cost score"
                         type="number"
                         min={0}
                         max={10}
@@ -407,6 +409,7 @@ export default function Page() {
                     <td className="px-3 py-2">
                       <input
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        aria-label="Benefit score"
                         type="number"
                         min={0}
                         max={10}
@@ -419,6 +422,7 @@ export default function Page() {
                     <td className="px-3 py-2">
                       <input
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        aria-label="Risk score"
                         type="number"
                         min={0}
                         max={10}
@@ -431,6 +435,7 @@ export default function Page() {
                     <td className="px-3 py-2">
                       <input
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
+                        aria-label="Strategic fit score"
                         type="number"
                         min={0}
                         max={10}
@@ -446,10 +451,13 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        variant="destructive"
+                        size="sm"
+                        aria-label={`Remove option ${option.optionName || index + 1}`}
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
                       >
+                        <Trash2 className="mr-1 size-4" />
                         Remove
                       </Button>
                     </td>
@@ -568,10 +576,13 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      variant="destructive"
+                      size="sm"
+                      aria-label={`Remove phase ${phase.title || index + 1}`}
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
                     >
+                      <Trash2 className="mr-1 size-4" />
                       Remove Phase
                     </Button>
                   </div>

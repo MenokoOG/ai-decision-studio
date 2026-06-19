@@ -1,0 +1,3 @@
+## 2025-05-15 - [Destructive Actions & Input Accessibility]
+**Learning:** Using the `destructive` variant and a semantic icon (like `Trash2`) for "Remove" actions significantly improves the visual hierarchy and safety of the interface, especially in dense tables or lists. Additionally, providing `aria-label` to inputs in a grid/table format is essential for screen reader users when visible labels are omitted for layout reasons.
+**Action:** Always check for destructive actions and ensure they have appropriate visual warnings and clear labels. Apply `aria-label` to all inputs in table-like layouts.
