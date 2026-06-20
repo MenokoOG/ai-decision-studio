@@ -1,0 +1,3 @@
+## 2025-05-15 - [Accessible Table Inputs & Destructive Actions]
+**Learning:** In table-heavy layouts, generic ARIA labels (e.g., "Option name") on multiple rows can be confusing for screen reader users. Including contextual information like the row index or the item name (if available) provides much better clarity. Also, using a consistent `destructive` variant for removal actions improves visual hierarchy.
+**Action:** Always use unique, descriptive `aria-label` attributes for recurring interactive elements in lists or tables. Use the `destructive` button variant for any irreversible deletion or removal actions.

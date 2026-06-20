@@ -387,6 +387,7 @@ export default function Page() {
                       <input
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
+                        aria-label={`Option name for option ${index + 1}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'optionName', event.target.value)
                         }
@@ -399,6 +400,7 @@ export default function Page() {
                         min={0}
                         max={10}
                         value={option.costScore}
+                        aria-label={`Cost score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'costScore', Number(event.target.value))
                         }
@@ -411,6 +413,7 @@ export default function Page() {
                         min={0}
                         max={10}
                         value={option.benefitScore}
+                        aria-label={`Benefit score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'benefitScore', Number(event.target.value))
                         }
@@ -423,6 +426,7 @@ export default function Page() {
                         min={0}
                         max={10}
                         value={option.riskScore}
+                        aria-label={`Risk score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'riskScore', Number(event.target.value))
                         }
@@ -435,6 +439,7 @@ export default function Page() {
                         min={0}
                         max={10}
                         value={option.fitScore}
+                        aria-label={`Fit score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'fitScore', Number(event.target.value))
                         }
@@ -446,7 +451,9 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        variant="destructive"
+                        size="sm"
+                        aria-label={`Remove option ${option.optionName || index + 1}`}
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
                       >
@@ -568,7 +575,9 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      variant="destructive"
+                      size="sm"
+                      aria-label={`Remove phase ${phase.title || index + 1}`}
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
                     >
