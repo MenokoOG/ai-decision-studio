@@ -1,3 +1,3 @@
-## 2025-05-15 - Improving Accessibility and Destructive Action UX
-**Learning:** Form labels should prefer explicit association with inputs using `htmlFor` and `id` attributes to ensure maximum compatibility with assistive technologies. Additionally, destructive actions (like "Remove") should use distinct visual markers (destructive button variants) and contextual `aria-labels` that identify the specific item being affected (e.g., "Remove option A" instead of just "Remove").
-**Action:** Always verify that every input has an associated `id` and `label[for]`, and ensure icon-only or generic-text buttons have descriptive `aria-labels`.
+## 2025-05-15 - [Accessible Table Inputs & Destructive Actions]
+**Learning:** In table-heavy layouts, generic ARIA labels (e.g., "Option name") on multiple rows can be confusing for screen reader users. Including contextual information like the row index or the item name (if available) provides much better clarity. Also, using a consistent `destructive` variant for removal actions improves visual hierarchy.
+**Action:** Always use unique, descriptive `aria-label` attributes for recurring interactive elements in lists or tables. Use the `destructive` button variant for any irreversible deletion or removal actions.
