@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -250,18 +250,20 @@ export default function Page() {
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="baselineAnnualCost" className="flex flex-col gap-1 text-sm text-slate-200">
                 Baseline annual cost
                 <input
+                  id="baselineAnnualCost"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.baselineAnnualCost}
                   onChange={(event) => setAssumption('baselineAnnualCost', event.target.value)}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="expectedAnnualCostReduction" className="flex flex-col gap-1 text-sm text-slate-200">
                 Expected annual cost reduction
                 <input
+                  id="expectedAnnualCostReduction"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.expectedAnnualCostReduction}
@@ -270,9 +272,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="implementationOneTimeCost" className="flex flex-col gap-1 text-sm text-slate-200">
                 Implementation one-time cost
                 <input
+                  id="implementationOneTimeCost"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.implementationOneTimeCost}
@@ -281,9 +284,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="implementationAnnualCost" className="flex flex-col gap-1 text-sm text-slate-200">
                 Implementation annual run cost
                 <input
+                  id="implementationAnnualCost"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.implementationAnnualCost}
@@ -292,9 +296,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2">
+              <label htmlFor="horizonYears" className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2">
                 Horizon years
                 <input
+                  id="horizonYears"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="numeric"
                   value={assumptions.horizonYears}
@@ -446,10 +451,13 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        variant="ghost"
+                        variant="destructive"
+                        size="sm"
+                        aria-label={`Remove option ${option.optionName || 'unnamed'}`}
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
                       >
+                        <Trash2 className="mr-1 size-4" />
                         Remove
                       </Button>
                     </td>
@@ -520,12 +528,14 @@ export default function Page() {
                     value={phase.title}
                     onChange={(event) => setRoadmapPhase(index, 'title', event.target.value)}
                     placeholder="Phase title"
+                    aria-label={`Phase ${index + 1} Title`}
                   />
                   <input
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                     value={phase.lane}
                     onChange={(event) => setRoadmapPhase(index, 'lane', event.target.value)}
                     placeholder="Lane"
+                    aria-label={`Phase ${index + 1} Lane`}
                   />
                   <textarea
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
@@ -533,11 +543,13 @@ export default function Page() {
                     value={phase.deliverables}
                     onChange={(event) => setRoadmapPhase(index, 'deliverables', event.target.value)}
                     placeholder="Deliverables"
+                    aria-label={`Phase ${index + 1} Deliverables`}
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="text-xs text-slate-400">
+                    <label htmlFor={`phase-${index}-startDate`} className="text-xs text-slate-400">
                       Start date
                       <input
+                        id={`phase-${index}-startDate`}
                         className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="date"
                         value={phase.startDate ? phase.startDate.slice(0, 10) : ''}
@@ -550,9 +562,10 @@ export default function Page() {
                         }
                       />
                     </label>
-                    <label className="text-xs text-slate-400">
+                    <label htmlFor={`phase-${index}-endDate`} className="text-xs text-slate-400">
                       End date
                       <input
+                        id={`phase-${index}-endDate`}
                         className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="date"
                         value={phase.endDate ? phase.endDate.slice(0, 10) : ''}
@@ -568,10 +581,13 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      variant="ghost"
+                      variant="destructive"
+                      size="sm"
+                      aria-label={`Remove phase ${index + 1}: ${phase.title || 'unnamed'}`}
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
                     >
+                      <Trash2 className="mr-1 size-4" />
                       Remove Phase
                     </Button>
                   </div>
