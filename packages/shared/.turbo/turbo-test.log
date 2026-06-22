@@ -1,6 +1,5 @@
 
-
-> @ai-cost-tool/shared@0.1.0 test /home/m3n0ko0g/development/04_products/ai-cost-tool-starter-ai-decision-studio-harness-clean/packages/shared
+> @ai-cost-tool/shared@0.1.0 test /app/packages/shared
 > echo 'tests pending'
 
 tests pending
