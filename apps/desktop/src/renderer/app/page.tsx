@@ -250,18 +250,20 @@ export default function Page() {
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="baselineAnnualCost" className="flex flex-col gap-1 text-sm text-slate-200">
                 Baseline annual cost
                 <input
+                  id="baselineAnnualCost"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.baselineAnnualCost}
                   onChange={(event) => setAssumption('baselineAnnualCost', event.target.value)}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="expectedAnnualCostReduction" className="flex flex-col gap-1 text-sm text-slate-200">
                 Expected annual cost reduction
                 <input
+                  id="expectedAnnualCostReduction"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.expectedAnnualCostReduction}
@@ -270,9 +272,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="implementationOneTimeCost" className="flex flex-col gap-1 text-sm text-slate-200">
                 Implementation one-time cost
                 <input
+                  id="implementationOneTimeCost"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.implementationOneTimeCost}
@@ -281,9 +284,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200">
+              <label htmlFor="implementationAnnualCost" className="flex flex-col gap-1 text-sm text-slate-200">
                 Implementation annual run cost
                 <input
+                  id="implementationAnnualCost"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="decimal"
                   value={assumptions.implementationAnnualCost}
@@ -292,9 +296,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2">
+              <label htmlFor="horizonYears" className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2">
                 Horizon years
                 <input
+                  id="horizonYears"
                   className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                   inputMode="numeric"
                   value={assumptions.horizonYears}
@@ -385,8 +390,10 @@ export default function Page() {
                   <tr key={`${option.id ?? 'draft'}-${index}`}>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Option name"
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
+                        aria-label={`Option name for option ${index + 1}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'optionName', event.target.value)
                         }
@@ -394,11 +401,13 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Cost score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.costScore}
+                        aria-label={`Cost score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'costScore', Number(event.target.value))
                         }
@@ -406,11 +415,13 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Benefit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.benefitScore}
+                        aria-label={`Benefit score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'benefitScore', Number(event.target.value))
                         }
@@ -418,11 +429,13 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Risk score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.riskScore}
+                        aria-label={`Risk score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'riskScore', Number(event.target.value))
                         }
@@ -430,11 +443,13 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label="Fit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.fitScore}
+                        aria-label={`Fit score for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'fitScore', Number(event.target.value))
                         }
@@ -523,12 +538,14 @@ export default function Page() {
                     value={phase.title}
                     onChange={(event) => setRoadmapPhase(index, 'title', event.target.value)}
                     placeholder="Phase title"
+                    aria-label={`Phase ${index + 1} Title`}
                   />
                   <input
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
                     value={phase.lane}
                     onChange={(event) => setRoadmapPhase(index, 'lane', event.target.value)}
                     placeholder="Lane"
+                    aria-label={`Phase ${index + 1} Lane`}
                   />
                   <textarea
                     className="rounded-lg border border-white/15 bg-slate-950/40 px-3 py-2 text-sm"
@@ -536,11 +553,13 @@ export default function Page() {
                     value={phase.deliverables}
                     onChange={(event) => setRoadmapPhase(index, 'deliverables', event.target.value)}
                     placeholder="Deliverables"
+                    aria-label={`Phase ${index + 1} Deliverables`}
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="text-xs text-slate-400">
+                    <label htmlFor={`phase-${index}-startDate`} className="text-xs text-slate-400">
                       Start date
                       <input
+                        id={`phase-${index}-startDate`}
                         className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="date"
                         value={phase.startDate ? phase.startDate.slice(0, 10) : ''}
@@ -553,9 +572,10 @@ export default function Page() {
                         }
                       />
                     </label>
-                    <label className="text-xs text-slate-400">
+                    <label htmlFor={`phase-${index}-endDate`} className="text-xs text-slate-400">
                       End date
                       <input
+                        id={`phase-${index}-endDate`}
                         className="mt-1 w-full rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="date"
                         value={phase.endDate ? phase.endDate.slice(0, 10) : ''}
