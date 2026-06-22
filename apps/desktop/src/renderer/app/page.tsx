@@ -461,13 +461,13 @@ export default function Page() {
                     <td className="px-3 py-2 text-slate-300">{option.recommendation ?? '-'}</td>
                     <td className="px-3 py-2">
                       <Button
-                        aria-label="Remove decision option"
                         variant="destructive"
                         size="sm"
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
+                        aria-label="Remove option"
                       >
-                        <Trash2 className="mr-1 size-4" />
+                        <Trash2 className="size-4" />
                         Remove
                       </Button>
                     </td>
@@ -591,13 +591,13 @@ export default function Page() {
                   </div>
                   <div>
                     <Button
-                      aria-label="Remove roadmap phase"
                       variant="destructive"
                       size="sm"
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
+                      aria-label="Remove phase"
                     >
-                      <Trash2 className="mr-1 size-4" />
+                      <Trash2 className="size-4" />
                       Remove Phase
                     </Button>
                   </div>
