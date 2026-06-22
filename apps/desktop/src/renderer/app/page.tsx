@@ -465,9 +465,9 @@ export default function Page() {
                         size="sm"
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
-                        aria-label="Remove option"
+                        aria-label={`Remove option ${option.optionName || index + 1}`}
                       >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="mr-1 size-4" />
                         Remove
                       </Button>
                     </td>
@@ -595,9 +595,9 @@ export default function Page() {
                       size="sm"
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
-                      aria-label="Remove phase"
+                      aria-label={`Remove phase ${phase.title || index + 1}`}
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="mr-1 size-4" />
                       Remove Phase
                     </Button>
                   </div>

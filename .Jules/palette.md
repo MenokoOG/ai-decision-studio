@@ -1,7 +1,3 @@
-## 2025-05-15 - [Destructive Action Styling]
-**Learning:** Destructive actions like 'Remove' or 'Delete' should be visually distinct from secondary actions to prevent accidental data loss. Using a semantic `destructive` variant (red) combined with a recognizable icon (`Trash2`) provides a strong visual cue.
-**Action:** Always check if a 'Delete' or 'Remove' button is using a neutral variant (ghost/outline) and upgrade it to `destructive` with an icon and `aria-label`.
-
-## 2025-05-15 - [Testing Electron Renderers in Browser]
-**Learning:** The Electron renderer can be verified in a standard browser by mocking the IPC bridge (`window.aiDecisionStudio`). This allows for automated screenshot capture and layout verification without the complexity of launching the full Electron environment.
-**Action:** Use a Playwright `init_script` to provide mock implementations of all expected desktop bridge methods when verifying frontend changes.
+## 2025-05-15 - [Destructive Action Affordance]
+**Learning:** Generic 'ghost' or 'outline' buttons for destructive actions like 'Remove' lack visual weight and can lead to accidental data loss. Using a semantic 'destructive' variant (typically red) paired with a clear iconography (e.g., Trash icon) creates a stronger visual warning. Furthermore, icon-only or generic labels should be supplemented with context-specific `aria-label` attributes (e.g., "Remove option [Name]") to provide clear context for screen reader users.
+**Action:** Always check for or implement a 'destructive' variant in the design system for any data-removal action. Ensure these actions include both visual (color/icon) and descriptive (aria-label) cues.
