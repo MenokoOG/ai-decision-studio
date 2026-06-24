@@ -390,10 +390,13 @@ export default function Page() {
                   <tr key={`${option.id ?? 'draft'}-${index}`}>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Option name"
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
-                        aria-label={`Option name for option ${index + 1}`}
+                        aria-label={
+                          option.optionName
+                            ? `Option name: ${option.optionName}`
+                            : `Option name for option ${index + 1}`
+                        }
                         onChange={(event) =>
                           setDecisionOption(index, 'optionName', event.target.value)
                         }
@@ -401,13 +404,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Cost score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.costScore}
-                        aria-label={`Cost score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Cost score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'costScore', Number(event.target.value))
                         }
@@ -415,13 +417,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Benefit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.benefitScore}
-                        aria-label={`Benefit score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Benefit score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'benefitScore', Number(event.target.value))
                         }
@@ -429,13 +430,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Risk score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.riskScore}
-                        aria-label={`Risk score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Risk score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'riskScore', Number(event.target.value))
                         }
@@ -443,13 +443,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Fit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.fitScore}
-                        aria-label={`Fit score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Fit score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'fitScore', Number(event.target.value))
                         }
