@@ -142,6 +142,7 @@ export function useHomeWorkspace() {
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
     const [decisionOptions, setDecisionOptions] = useState<DecisionMatrixEditableOption[]>(
         initialDecisionOptions,
@@ -386,6 +387,8 @@ export function useHomeWorkspace() {
             return;
         }
 
+        setIsCreating(true);
+
         try {
             const workspace = await createInitiativeFromTemplate(selectedTemplateSlug);
             applyWorkspace(workspace);
@@ -394,6 +397,8 @@ export function useHomeWorkspace() {
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to create initiative.';
             setPreviewError(message);
+        } finally {
+            setIsCreating(false);
         }
     }, [applyWorkspace, selectedTemplateSlug]);
 
@@ -617,6 +622,7 @@ export function useHomeWorkspace() {
         isRoadmapLoading,
         isRoadmapSaving,
         isSaving,
+        isCreating,
         isTemplateLibraryOpen,
         isTemplatesLoading,
         preview,
