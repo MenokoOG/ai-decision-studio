@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles, Trash2 } from 'lucide-react';
+import { Sparkles, Trash2, Plus, Calculator, Library, RefreshCw, Save, ArrowRight, ArrowLeft } from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -166,16 +166,19 @@ export default function Page() {
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button className="gap-2" onClick={startDraft}>
-            <Sparkles className="size-4" />
+            <Plus className="size-4" />
             {activeInitiativeId ? 'Create Another Initiative' : 'Start Business Case'}
           </Button>
           <Button variant="outline" onClick={openTemplateLibrary}>
+            <Library className="mr-2 size-4" />
             Open Template Library
           </Button>
           <Button variant="ghost" onClick={loadTemplates}>
+            <RefreshCw className="mr-2 size-4" />
             Refresh Templates
           </Button>
           <Button variant="ghost" onClick={loadInitiativeList}>
+            <RefreshCw className="mr-2 size-4" />
             Refresh Initiatives
           </Button>
         </div>
@@ -310,6 +313,7 @@ export default function Page() {
 
             <div className="mt-4 flex items-center gap-3">
               <Button onClick={runPreview} disabled={isPreviewLoading || isTemplatesLoading}>
+                <Calculator className="mr-2 size-4" />
                 {isPreviewLoading ? 'Calculating...' : 'Calculate Business Case'}
               </Button>
               <Button
@@ -317,6 +321,7 @@ export default function Page() {
                 onClick={persistBusinessCase}
                 disabled={!activeInitiativeId || isSaving}
               >
+                <Save className="mr-2 size-4" />
                 {isSaving ? 'Saving...' : 'Save Business Case'}
               </Button>
               <Button
@@ -324,6 +329,7 @@ export default function Page() {
                 onClick={saveAndContinueToDecisionMatrix}
                 disabled={!activeInitiativeId || isSaving}
               >
+                <Save className="mr-2 size-4" />
                 Save and Continue
               </Button>
               {previewError ? <p className="text-sm text-rose-300">{previewError}</p> : null}
@@ -390,7 +396,6 @@ export default function Page() {
                   <tr key={`${option.id ?? 'draft'}-${index}`}>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Option name"
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
                         aria-label={`Option name for option ${index + 1}`}
@@ -401,13 +406,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Cost score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.costScore}
-                        aria-label={`Cost score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Cost score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'costScore', Number(event.target.value))
                         }
@@ -415,13 +419,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Benefit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.benefitScore}
-                        aria-label={`Benefit score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Benefit score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'benefitScore', Number(event.target.value))
                         }
@@ -429,13 +432,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Risk score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.riskScore}
-                        aria-label={`Risk score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Risk score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'riskScore', Number(event.target.value))
                         }
@@ -443,13 +445,12 @@ export default function Page() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        aria-label="Fit score (0-10)"
                         className="w-16 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         type="number"
                         min={0}
                         max={10}
                         value={option.fitScore}
-                        aria-label={`Fit score for ${option.optionName || `option ${index + 1}`}`}
+                        aria-label={`Fit score (0-10) for ${option.optionName || `option ${index + 1}`}`}
                         onChange={(event) =>
                           setDecisionOption(index, 'fitScore', Number(event.target.value))
                         }
@@ -479,6 +480,7 @@ export default function Page() {
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={addDecisionOption}>
+              <Plus className="mr-2 size-4" />
               Add Option
             </Button>
             <Button
@@ -486,6 +488,7 @@ export default function Page() {
               onClick={persistDecisionMatrix}
               disabled={!activeInitiativeId || isDecisionMatrixSaving}
             >
+              <Save className="mr-2 size-4" />
               {isDecisionMatrixSaving ? 'Saving Matrix...' : 'Save Decision Matrix'}
             </Button>
             {decisionMatrixError ? (
@@ -499,6 +502,7 @@ export default function Page() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => goToTab('business-case')}>
+              <ArrowLeft className="mr-2 size-4" />
               Back to Business Case
             </Button>
             <Button
@@ -507,6 +511,7 @@ export default function Page() {
               disabled={!hasBusinessCaseOutputs}
             >
               Continue to Roadmap
+              <ArrowRight className="ml-2 size-4" />
             </Button>
           </div>
         </section>
@@ -608,6 +613,7 @@ export default function Page() {
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={addRoadmapPhase}>
+              <Plus className="mr-2 size-4" />
               Add Phase
             </Button>
             <Button
@@ -615,6 +621,7 @@ export default function Page() {
               onClick={persistRoadmap}
               disabled={!activeInitiativeId || isRoadmapSaving}
             >
+              <Save className="mr-2 size-4" />
               {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
             </Button>
             {roadmapError ? <p className="text-sm text-rose-300">{roadmapError}</p> : null}
@@ -626,9 +633,11 @@ export default function Page() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => goToTab('decision-matrix')}>
+              <ArrowLeft className="mr-2 size-4" />
               Back to Decision Matrix
             </Button>
             <Button variant="secondary" onClick={saveRoadmapAndReturnToBusinessCase}>
+              <Save className="mr-2 size-4" />
               Save and Return to Business Case
             </Button>
           </div>
