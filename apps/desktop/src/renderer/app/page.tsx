@@ -398,7 +398,11 @@ export default function Page() {
                       <input
                         className="w-44 rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 text-sm"
                         value={option.optionName}
-                        aria-label={`Option name for option ${index + 1}`}
+                        aria-label={
+                          option.optionName
+                            ? `Option name: ${option.optionName}`
+                            : `Option name for option ${index + 1}`
+                        }
                         onChange={(event) =>
                           setDecisionOption(index, 'optionName', event.target.value)
                         }
