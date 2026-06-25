@@ -1,7 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Sparkles, Trash2, Plus, Calculator, Library, RefreshCw, Save, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  Sparkles,
+  Trash2,
+  Plus,
+  Calculator,
+  Library,
+  RefreshCw,
+  Save,
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  Check,
+} from 'lucide-react';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -61,14 +73,15 @@ export default function Page() {
     decisionMatrixError,
     decisionOptions,
     initiatives,
+    isInitiativesLoading,
     isDecisionMatrixLoading,
     isDecisionMatrixSaving,
     initiativesError,
-    isInitiativesLoading,
     isPreviewLoading,
     isRoadmapLoading,
     isRoadmapSaving,
     isSaving,
+    isCreating,
     isTemplateLibraryOpen,
     isTemplatesLoading,
     openInitiative,
@@ -165,24 +178,34 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button className="gap-2" onClick={startDraft}>
-            <Plus className="size-4" />
-            {activeInitiativeId ? 'Create Another Initiative' : 'Start Business Case'}
+          <Button className="gap-2" onClick={startDraft} disabled={isCreating}>
+            {isCreating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            {isCreating
+              ? 'Creating...'
+              : activeInitiativeId
+                ? 'Create Another Initiative'
+                : 'Start Business Case'}
           </Button>
           <Button variant="outline" onClick={openTemplateLibrary}>
             <Library className="mr-2 size-4" />
             Open Template Library
           </Button>
-          <Button variant="ghost" onClick={loadTemplates}>
-            <RefreshCw className="mr-2 size-4" />
-            Refresh Templates
+          <Button variant="ghost" onClick={loadTemplates} disabled={isTemplatesLoading}>
+            <RefreshCw className={`mr-2 size-4 ${isTemplatesLoading ? 'animate-spin' : ''}`} />
+            {isTemplatesLoading ? 'Refreshing...' : 'Refresh Templates'}
           </Button>
-          <Button variant="ghost" onClick={loadInitiativeList}>
-            <RefreshCw className="mr-2 size-4" />
-            Refresh Initiatives
+          <Button variant="ghost" onClick={loadInitiativeList} disabled={isInitiativesLoading}>
+            <RefreshCw className={`mr-2 size-4 ${isInitiativesLoading ? 'animate-spin' : ''}`} />
+            {isInitiativesLoading ? 'Refreshing...' : 'Refresh Initiatives'}
           </Button>
         </div>
-        <p className="mt-4 text-sm text-brand-100/90">{statusText}</p>
+        <p className="mt-4 text-sm text-brand-100/90" aria-live="polite">
+          {statusText}
+        </p>
       </section>
 
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
@@ -313,7 +336,11 @@ export default function Page() {
 
             <div className="mt-4 flex items-center gap-3">
               <Button onClick={runPreview} disabled={isPreviewLoading || isTemplatesLoading}>
-                <Calculator className="mr-2 size-4" />
+                {isPreviewLoading ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Calculator className="mr-2 size-4" />
+                )}
                 {isPreviewLoading ? 'Calculating...' : 'Calculate Business Case'}
               </Button>
               <Button
@@ -321,7 +348,11 @@ export default function Page() {
                 onClick={persistBusinessCase}
                 disabled={!activeInitiativeId || isSaving}
               >
-                <Save className="mr-2 size-4" />
+                {isSaving ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 size-4" />
+                )}
                 {isSaving ? 'Saving...' : 'Save Business Case'}
               </Button>
               <Button
@@ -329,8 +360,12 @@ export default function Page() {
                 onClick={saveAndContinueToDecisionMatrix}
                 disabled={!activeInitiativeId || isSaving}
               >
-                <Save className="mr-2 size-4" />
-                Save and Continue
+                {isSaving ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 size-4" />
+                )}
+                {isSaving ? 'Saving...' : 'Save and Continue'}
               </Button>
               {previewError ? <p className="text-sm text-rose-300">{previewError}</p> : null}
             </div>
@@ -492,7 +527,11 @@ export default function Page() {
               onClick={persistDecisionMatrix}
               disabled={!activeInitiativeId || isDecisionMatrixSaving}
             >
-              <Save className="mr-2 size-4" />
+              {isDecisionMatrixSaving ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 size-4" />
+              )}
               {isDecisionMatrixSaving ? 'Saving Matrix...' : 'Save Decision Matrix'}
             </Button>
             {decisionMatrixError ? (
@@ -625,7 +664,11 @@ export default function Page() {
               onClick={persistRoadmap}
               disabled={!activeInitiativeId || isRoadmapSaving}
             >
-              <Save className="mr-2 size-4" />
+              {isRoadmapSaving ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 size-4" />
+              )}
               {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
             </Button>
             {roadmapError ? <p className="text-sm text-rose-300">{roadmapError}</p> : null}
@@ -640,9 +683,17 @@ export default function Page() {
               <ArrowLeft className="mr-2 size-4" />
               Back to Decision Matrix
             </Button>
-            <Button variant="secondary" onClick={saveRoadmapAndReturnToBusinessCase}>
-              <Save className="mr-2 size-4" />
-              Save and Return to Business Case
+            <Button
+              variant="secondary"
+              onClick={saveRoadmapAndReturnToBusinessCase}
+              disabled={isRoadmapSaving}
+            >
+              {isRoadmapSaving ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 size-4" />
+              )}
+              {isRoadmapSaving ? 'Saving...' : 'Save and Return to Business Case'}
             </Button>
           </div>
         </section>
@@ -671,7 +722,14 @@ export default function Page() {
                   variant={selectedTemplateSlug === template.slug ? 'secondary' : 'outline'}
                   onClick={() => setSelectedTemplateSlug(template.slug)}
                 >
-                  {selectedTemplateSlug === template.slug ? 'Selected' : 'Use Template'}
+                  {selectedTemplateSlug === template.slug ? (
+                    <>
+                      <Check className="mr-2 size-4" />
+                      Selected
+                    </>
+                  ) : (
+                    'Use Template'
+                  )}
                 </Button>
               </article>
             ))}
