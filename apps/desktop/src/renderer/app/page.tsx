@@ -178,11 +178,11 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button className="gap-2" onClick={startDraft} disabled={isCreating}>
+          <Button onClick={startDraft} disabled={isCreating}>
             {isCreating ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
-              <Plus className="size-4" />
+              <Plus className="mr-2 size-4" />
             )}
             {isCreating
               ? 'Creating...'
@@ -210,7 +210,11 @@ export default function Page() {
 
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-lg font-semibold">Saved Initiatives</h2>
-        {initiativesError ? <p className="mt-2 text-sm text-rose-300">{initiativesError}</p> : null}
+        {initiativesError ? (
+          <p className="mt-2 text-sm text-rose-300" aria-live="polite">
+            {initiativesError}
+          </p>
+        ) : null}
         {isInitiativesLoading ? (
           <p className="mt-2 text-sm text-slate-300">Loading initiatives...</p>
         ) : null}
@@ -367,7 +371,11 @@ export default function Page() {
                 )}
                 {isSaving ? 'Saving...' : 'Save and Continue'}
               </Button>
-              {previewError ? <p className="text-sm text-rose-300">{previewError}</p> : null}
+              {previewError ? (
+                <p className="text-sm text-rose-300" aria-live="polite">
+                  {previewError}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -507,7 +515,7 @@ export default function Page() {
                         disabled={decisionOptions.length <= 1}
                         aria-label={`Remove option ${option.optionName || index + 1}`}
                       >
-                        <Trash2 className="mr-1 size-4" />
+                        <Trash2 className="mr-2 size-4" />
                         Remove
                       </Button>
                     </td>
@@ -535,7 +543,9 @@ export default function Page() {
               {isDecisionMatrixSaving ? 'Saving Matrix...' : 'Save Decision Matrix'}
             </Button>
             {decisionMatrixError ? (
-              <p className="text-sm text-rose-300">{decisionMatrixError}</p>
+              <p className="text-sm text-rose-300" aria-live="polite">
+                {decisionMatrixError}
+              </p>
             ) : null}
           </div>
 
@@ -645,7 +655,7 @@ export default function Page() {
                       disabled={roadmapPhases.length <= 1}
                       aria-label={`Remove phase ${phase.title || index + 1}`}
                     >
-                      <Trash2 className="mr-1 size-4" />
+                      <Trash2 className="mr-2 size-4" />
                       Remove Phase
                     </Button>
                   </div>
@@ -671,7 +681,11 @@ export default function Page() {
               )}
               {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
             </Button>
-            {roadmapError ? <p className="text-sm text-rose-300">{roadmapError}</p> : null}
+            {roadmapError ? (
+              <p className="text-sm text-rose-300" aria-live="polite">
+                {roadmapError}
+              </p>
+            ) : null}
           </div>
 
           <p className="mt-4 text-xs uppercase tracking-[0.16em] text-slate-400">
@@ -702,7 +716,11 @@ export default function Page() {
       {isTemplateLibraryOpen ? (
         <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
           <h2 className="text-lg font-semibold">Built-in Template Library</h2>
-          {templatesError ? <p className="mt-3 text-sm text-rose-300">{templatesError}</p> : null}
+          {templatesError ? (
+            <p className="mt-3 text-sm text-rose-300" aria-live="polite">
+              {templatesError}
+            </p>
+          ) : null}
           {isTemplatesLoading ? (
             <p className="mt-3 text-sm text-slate-300">Loading templates...</p>
           ) : null}
