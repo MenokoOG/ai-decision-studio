@@ -225,15 +225,21 @@ export default function Page() {
         ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {initiatives.map((initiative) => (
-            <Button
-              key={initiative.id}
-              variant={activeInitiativeId === initiative.id ? 'secondary' : 'outline'}
-              onClick={() => openInitiative(initiative.id)}
-            >
-              {initiative.title}
-            </Button>
-          ))}
+          {initiatives.map((initiative) => {
+            const isActive = activeInitiativeId === initiative.id;
+            return (
+              <Button
+                key={initiative.id}
+                variant={isActive ? 'secondary' : 'outline'}
+                onClick={() => openInitiative(initiative.id)}
+                aria-label={`Select initiative: ${initiative.title}`}
+                aria-current={isActive ? 'true' : undefined}
+              >
+                {isActive && <Check className="mr-2 size-4" />}
+                {initiative.title}
+              </Button>
+            );
+          })}
         </div>
       </section>
 
@@ -241,8 +247,10 @@ export default function Page() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Initiative Workspace</h2>
           {activeInitiative ? (
-            <p className="text-sm text-slate-300">
-              Active: <span className="font-semibold text-slate-100">{activeInitiative.title}</span>
+            <p className="flex items-center text-sm text-slate-300">
+              <Sparkles className="mr-2 size-3 text-brand-400" />
+              Active:{' '}
+              <span className="ml-1 font-semibold text-slate-100">{activeInitiative.title}</span>
             </p>
           ) : (
             <p className="text-sm text-slate-300">Select or create an initiative to begin.</p>
@@ -251,15 +259,19 @@ export default function Page() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {WORKSPACE_TABS.map((tab, index) => {
+            const isActive = activeTab === tab.id;
             const disabled = !!tab.requiresBusinessCase && !hasBusinessCaseOutputs;
 
             return (
               <Button
                 key={tab.id}
-                variant={activeTab === tab.id ? 'secondary' : 'outline'}
+                variant={isActive ? 'secondary' : 'outline'}
                 onClick={() => goToTab(tab.id)}
                 disabled={disabled}
+                aria-current={isActive ? 'true' : undefined}
+                title={disabled ? 'Requires a completed business case' : undefined}
               >
+                {isActive && <Check className="mr-2 size-4" />}
                 {index + 1}. {tab.title}
               </Button>
             );
@@ -280,7 +292,10 @@ export default function Page() {
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label htmlFor="baselineAnnualCost" className="flex flex-col gap-1 text-sm text-slate-200">
+              <label
+                htmlFor="baselineAnnualCost"
+                className="flex flex-col gap-1 text-sm text-slate-200"
+              >
                 Baseline annual cost
                 <input
                   id="baselineAnnualCost"
@@ -290,7 +305,10 @@ export default function Page() {
                   onChange={(event) => setAssumption('baselineAnnualCost', event.target.value)}
                 />
               </label>
-              <label htmlFor="expectedAnnualCostReduction" className="flex flex-col gap-1 text-sm text-slate-200">
+              <label
+                htmlFor="expectedAnnualCostReduction"
+                className="flex flex-col gap-1 text-sm text-slate-200"
+              >
                 Expected annual cost reduction
                 <input
                   id="expectedAnnualCostReduction"
@@ -302,7 +320,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label htmlFor="implementationOneTimeCost" className="flex flex-col gap-1 text-sm text-slate-200">
+              <label
+                htmlFor="implementationOneTimeCost"
+                className="flex flex-col gap-1 text-sm text-slate-200"
+              >
                 Implementation one-time cost
                 <input
                   id="implementationOneTimeCost"
@@ -314,7 +335,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label htmlFor="implementationAnnualCost" className="flex flex-col gap-1 text-sm text-slate-200">
+              <label
+                htmlFor="implementationAnnualCost"
+                className="flex flex-col gap-1 text-sm text-slate-200"
+              >
                 Implementation annual run cost
                 <input
                   id="implementationAnnualCost"
@@ -326,7 +350,10 @@ export default function Page() {
                   }
                 />
               </label>
-              <label htmlFor="horizonYears" className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2">
+              <label
+                htmlFor="horizonYears"
+                className="flex flex-col gap-1 text-sm text-slate-200 sm:col-span-2"
+              >
                 Horizon years
                 <input
                   id="horizonYears"
