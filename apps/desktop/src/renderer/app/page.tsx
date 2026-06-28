@@ -766,6 +766,7 @@ export default function Page() {
                   className="mt-4"
                   variant={selectedTemplateSlug === template.slug ? 'secondary' : 'outline'}
                   onClick={() => setSelectedTemplateSlug(template.slug)}
+                  aria-current={selectedTemplateSlug === template.slug ? 'true' : undefined}
                 >
                   {selectedTemplateSlug === template.slug ? (
                     <>
