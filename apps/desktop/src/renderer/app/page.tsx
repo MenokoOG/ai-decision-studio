@@ -541,6 +541,7 @@ export default function Page() {
                         onClick={() => removeDecisionOption(index)}
                         disabled={decisionOptions.length <= 1}
                         aria-label={`Remove option ${option.optionName || index + 1}`}
+                        title={decisionOptions.length <= 1 ? 'Requires at least one option' : undefined}
                       >
                         <Trash2 className="mr-2 size-4" />
                         Remove
@@ -588,10 +589,19 @@ export default function Page() {
             <Button
               variant="secondary"
               onClick={saveDecisionMatrixAndContinue}
-              disabled={!hasBusinessCaseOutputs}
+              disabled={!hasBusinessCaseOutputs || isDecisionMatrixSaving}
             >
-              Continue to Roadmap
-              <ArrowRight className="ml-2 size-4" />
+              {isDecisionMatrixSaving ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Saving Matrix...
+                </>
+              ) : (
+                <>
+                  Continue to Roadmap
+                  <ArrowRight className="ml-2 size-4" />
+                </>
+              )}
             </Button>
           </div>
         </section>
@@ -681,6 +691,7 @@ export default function Page() {
                       onClick={() => removeRoadmapPhase(index)}
                       disabled={roadmapPhases.length <= 1}
                       aria-label={`Remove phase ${phase.title || index + 1}`}
+                      title={roadmapPhases.length <= 1 ? 'Requires at least one phase' : undefined}
                     >
                       <Trash2 className="mr-2 size-4" />
                       Remove Phase
@@ -766,6 +777,7 @@ export default function Page() {
                   className="mt-4"
                   variant={selectedTemplateSlug === template.slug ? 'secondary' : 'outline'}
                   onClick={() => setSelectedTemplateSlug(template.slug)}
+                  aria-current={selectedTemplateSlug === template.slug ? 'true' : undefined}
                 >
                   {selectedTemplateSlug === template.slug ? (
                     <>
