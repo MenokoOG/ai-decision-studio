@@ -374,30 +374,34 @@ export default function Page() {
                 )}
                 {isPreviewLoading ? 'Calculating...' : 'Calculate Business Case'}
               </Button>
-              <Button
-                variant="secondary"
-                onClick={persistBusinessCase}
-                disabled={!activeInitiativeId || isSaving}
-              >
+              <span title={!activeInitiativeId ? 'Start or select an initiative to save' : undefined}>
+                <Button
+                  variant="secondary"
+                  onClick={persistBusinessCase}
+                  disabled={!activeInitiativeId || isSaving}
+                >
                 {isSaving ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
                   <Save className="mr-2 size-4" />
                 )}
-                {isSaving ? 'Saving...' : 'Save Business Case'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={saveAndContinueToDecisionMatrix}
-                disabled={!activeInitiativeId || isSaving}
-              >
+                  {isSaving ? 'Saving...' : 'Save Business Case'}
+                </Button>
+              </span>
+              <span title={!activeInitiativeId ? 'Start or select an initiative to save' : undefined}>
+                <Button
+                  variant="outline"
+                  onClick={saveAndContinueToDecisionMatrix}
+                  disabled={!activeInitiativeId || isSaving}
+                >
                 {isSaving ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
                   <Save className="mr-2 size-4" />
                 )}
-                {isSaving ? 'Saving...' : 'Save and Continue'}
-              </Button>
+                  {isSaving ? 'Saving...' : 'Save and Continue'}
+                </Button>
+              </span>
               {previewError ? (
                 <p className="text-sm text-rose-300" aria-live="polite">
                   {previewError}
@@ -557,18 +561,20 @@ export default function Page() {
               <Plus className="mr-2 size-4" />
               Add Option
             </Button>
-            <Button
-              variant="secondary"
-              onClick={persistDecisionMatrix}
-              disabled={!activeInitiativeId || isDecisionMatrixSaving}
-            >
+            <span title={!activeInitiativeId ? 'Start or select an initiative to save' : undefined}>
+              <Button
+                variant="secondary"
+                onClick={persistDecisionMatrix}
+                disabled={!activeInitiativeId || isDecisionMatrixSaving}
+              >
               {isDecisionMatrixSaving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
                 <Save className="mr-2 size-4" />
               )}
-              {isDecisionMatrixSaving ? 'Saving Matrix...' : 'Save Decision Matrix'}
-            </Button>
+                {isDecisionMatrixSaving ? 'Saving Matrix...' : 'Save Decision Matrix'}
+              </Button>
+            </span>
             {decisionMatrixError ? (
               <p className="text-sm text-rose-300" aria-live="polite">
                 {decisionMatrixError}
@@ -696,18 +702,20 @@ export default function Page() {
               <Plus className="mr-2 size-4" />
               Add Phase
             </Button>
-            <Button
-              variant="secondary"
-              onClick={persistRoadmap}
-              disabled={!activeInitiativeId || isRoadmapSaving}
-            >
+            <span title={!activeInitiativeId ? 'Start or select an initiative to save' : undefined}>
+              <Button
+                variant="secondary"
+                onClick={persistRoadmap}
+                disabled={!activeInitiativeId || isRoadmapSaving}
+              >
               {isRoadmapSaving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
                 <Save className="mr-2 size-4" />
               )}
-              {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
-            </Button>
+                {isRoadmapSaving ? 'Saving Roadmap...' : 'Save Roadmap'}
+              </Button>
+            </span>
             {roadmapError ? (
               <p className="text-sm text-rose-300" aria-live="polite">
                 {roadmapError}
@@ -724,18 +732,20 @@ export default function Page() {
               <ArrowLeft className="mr-2 size-4" />
               Back to Decision Matrix
             </Button>
-            <Button
-              variant="secondary"
-              onClick={saveRoadmapAndReturnToBusinessCase}
-              disabled={isRoadmapSaving}
-            >
+            <span title={!activeInitiativeId ? 'Start or select an initiative to save' : undefined}>
+              <Button
+                variant="secondary"
+                onClick={saveRoadmapAndReturnToBusinessCase}
+                disabled={!activeInitiativeId || isRoadmapSaving}
+              >
               {isRoadmapSaving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
                 <Save className="mr-2 size-4" />
               )}
-              {isRoadmapSaving ? 'Saving...' : 'Save and Return to Business Case'}
-            </Button>
+                {isRoadmapSaving ? 'Saving...' : 'Save and Return to Business Case'}
+              </Button>
+            </span>
           </div>
         </section>
       ) : null}
@@ -766,6 +776,12 @@ export default function Page() {
                   className="mt-4"
                   variant={selectedTemplateSlug === template.slug ? 'secondary' : 'outline'}
                   onClick={() => setSelectedTemplateSlug(template.slug)}
+                  aria-label={
+                    selectedTemplateSlug === template.slug
+                      ? `Selected template: ${template.title}`
+                      : `Use template: ${template.title}`
+                  }
+                  aria-current={selectedTemplateSlug === template.slug ? 'true' : undefined}
                 >
                   {selectedTemplateSlug === template.slug ? (
                     <>
@@ -784,7 +800,10 @@ export default function Page() {
 
       {selectedTemplate ? (
         <section className="mt-6 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-5">
-          <h2 className="text-lg font-semibold text-brand-50">Selected Template</h2>
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-brand-400" />
+            <h2 className="text-lg font-semibold text-brand-50">Selected Template</h2>
+          </div>
           <p className="mt-2 text-sm text-brand-100">{selectedTemplate.title}</p>
           <p className="mt-2 text-sm text-brand-100/90">{selectedTemplate.oneLiner}</p>
           <p className="mt-2 text-xs uppercase tracking-[0.16em] text-brand-100/80">
