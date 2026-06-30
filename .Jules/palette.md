@@ -9,3 +9,7 @@
 ## 2025-05-15 - [Icon Spacing and Component Noise]
 **Learning:** Redundant utility classes like `gap-2` on a `Button` that already has it in its base styles add unnecessary noise. Furthermore, while `gap` is preferred, some designers prefer the visual breathing room of explicit margins (e.g., `mr-2`) on icons to ensure clear separation from text.
 **Action:** Check base component styles before adding layout utilities and use consistent icon margins (`mr-2`) to standardize visual separation across the app.
+
+## 2025-05-15 - [Disabled Action Tooltips]
+**Learning:** Modern UI components often apply `pointer-events: none` to disabled buttons, which prevents native `title` tooltips from appearing. Wrapping the disabled button in a `span` or `div` with the `title` attribute ensures the tooltip remains accessible to mouse users without changing component styles.
+**Action:** When adding explanatory tooltips to disabled buttons, wrap them in a container element to ensure hover events are captured.
