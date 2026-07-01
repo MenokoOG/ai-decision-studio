@@ -9,3 +9,7 @@
 ## 2025-05-15 - [Icon Spacing and Component Noise]
 **Learning:** Redundant utility classes like `gap-2` on a `Button` that already has it in its base styles add unnecessary noise. Furthermore, while `gap` is preferred, some designers prefer the visual breathing room of explicit margins (e.g., `mr-2`) on icons to ensure clear separation from text.
 **Action:** Check base component styles before adding layout utilities and use consistent icon margins (`mr-2`) to standardize visual separation across the app.
+
+## 2026-07-01 - [Disabled Button Tooltip Visibility]
+**Learning:** HTML elements with `disabled` attributes (like `Button`) often have `pointer-events: none` in modern UI kits, which prevents native `title` tooltips or custom tooltip triggers from working on hover. Wrapping these elements in an `inline-flex` span allows the tooltip to be anchored to the wrapper, ensuring the user receives feedback on why an action is unavailable.
+**Action:** When a disabled button needs a tooltip, wrap it in a `<span className="inline-flex" title="...">` to ensure the tooltip is displayed.

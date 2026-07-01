@@ -263,17 +263,21 @@ export default function Page() {
             const disabled = !!tab.requiresBusinessCase && !hasBusinessCaseOutputs;
 
             return (
-              <Button
+              <span
                 key={tab.id}
-                variant={isActive ? 'secondary' : 'outline'}
-                onClick={() => goToTab(tab.id)}
-                disabled={disabled}
-                aria-current={isActive ? 'true' : undefined}
+                className="inline-flex"
                 title={disabled ? 'Requires a completed business case' : undefined}
               >
-                {isActive && <Check className="mr-2 size-4" />}
-                {index + 1}. {tab.title}
-              </Button>
+                <Button
+                  variant={isActive ? 'secondary' : 'outline'}
+                  onClick={() => goToTab(tab.id)}
+                  disabled={disabled}
+                  aria-current={isActive ? 'true' : undefined}
+                >
+                  {isActive && <Check className="mr-2 size-4" />}
+                  {index + 1}. {tab.title}
+                </Button>
+              </span>
             );
           })}
         </div>
@@ -413,7 +417,7 @@ export default function Page() {
             </p>
 
             {preview ? (
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm" aria-live="polite">
                 <dt className="text-slate-400">Total cost of ownership</dt>
                 <dd className="text-right font-semibold">
                   {asCurrency(preview.totalCostOfOwnership)}
