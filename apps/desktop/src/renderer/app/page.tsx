@@ -246,15 +246,17 @@ export default function Page() {
       <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Initiative Workspace</h2>
-          {activeInitiative ? (
-            <p className="flex items-center text-sm text-slate-300">
-              <Sparkles className="mr-2 size-3 text-brand-400" />
-              Active:{' '}
-              <span className="ml-1 font-semibold text-slate-100">{activeInitiative.title}</span>
-            </p>
-          ) : (
-            <p className="text-sm text-slate-300">Select or create an initiative to begin.</p>
-          )}
+          <div aria-live="polite">
+            {activeInitiative ? (
+              <p className="flex items-center text-sm text-slate-300">
+                <Sparkles className="mr-2 size-3 text-brand-400" />
+                Active:{' '}
+                <span className="ml-1 font-semibold text-slate-100">{activeInitiative.title}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-slate-300">Select or create an initiative to begin.</p>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -413,7 +415,7 @@ export default function Page() {
             </p>
 
             {preview ? (
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm" aria-live="polite">
                 <dt className="text-slate-400">Total cost of ownership</dt>
                 <dd className="text-right font-semibold">
                   {asCurrency(preview.totalCostOfOwnership)}
